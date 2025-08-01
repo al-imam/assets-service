@@ -1,0 +1,47 @@
+
+@baseUrl = http://localhost:8000/api/v1
+
+###
+
+@sign_up_request_auth = {{sign_up.response.body.auth}}
+
+# @name sign_up
+POST {{baseUrl}}/auth/sign-up/
+Content-Type: application/json
+
+{
+  "email": "alimam@example.com",
+  "password": "alimam@example.com",
+  "name": "Anonyms"
+}
+
+###
+
+@sign_up_verify_auth = {{sign_up_verify.response.body.auth}}
+
+# @name sign_up_verify
+POST {{baseUrl}}/auth/sign-up/verify
+Content-Type: application/json
+
+{
+  "auth": "{{sign_up_request_auth}}",
+  "code": "643526"
+}
+
+###
+
+@sign_in_auth = {{sign_in.response.body.auth}}
+
+# @name sign_in
+POST {{baseUrl}}/auth/sign-in
+Content-Type: application/json
+
+{
+  "email": "alimam@example.com",
+  "password": "alimam@example.com"
+}
+
+
+### @name get_current_user
+GET {{baseUrl}}/auth/me
+Cookie: auth={{sign_in_auth}}

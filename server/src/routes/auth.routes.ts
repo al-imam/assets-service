@@ -13,3 +13,5 @@ authRouter.get("/google/callback", authController.googleCallback.bind(authContro
 
 authRouter.post("/password/change", authController.changePassword.bind(authController));
 authRouter.post("/password/change/verify", authController.changePasswordVerify.bind(authController));
+
+authRouter.get("/me", authController.getCurrentUser.bind(authController));

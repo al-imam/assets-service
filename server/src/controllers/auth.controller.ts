@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { z } from "zod";
 import { env } from "~/env";
-import { BadRequestError, ZodValidationError } from "~/lib/http";
+import { BadRequestError, UnauthorizedError, ZodValidationError } from "~/lib/http";
 import { calculateTTL } from "~/lib/ttl";
 import { joinUrl } from "~/lib/url";
 import { AuthSchema, authService, AuthSignupSchema, PasswordChangeSchema } from "~/services/auth.service";
@@ -136,6 +136,14 @@ export class AuthController {
     });
 
     res.redirect(joinUrl(...(urls as [string])));
+  }
+
+  async getCurrentUser(req: Request, res: Response) {
+    const auth = req.cookies.auth;
+    if (!auth) throw new UnauthorizedError("Authentication token is required");
+    const user = await authService.getCurrentUser(auth);
+    if (!user) throw new UnauthorizedError("Invalid authentication token");
+    res.json(user);
   }
 }
 

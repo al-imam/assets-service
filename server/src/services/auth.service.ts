@@ -197,13 +197,13 @@ class AuthService {
       user: publicUser,
     };
   }
+
+  async getCurrentUser(auth?: string) {
+    if (!auth) return null;
+    const [value, error] = await safeVerify(auth);
+    if (error) return null;
+    return PublicUser.parse(value);
+  }
 }
 
 export const authService = new AuthService();
-
-export async function getCurrentUser(auth?: string) {
-  if (!auth) return null;
-  const [value, error] = await safeVerify(auth);
-  if (error) return null;
-  return PublicUser.parse(value);
-}
