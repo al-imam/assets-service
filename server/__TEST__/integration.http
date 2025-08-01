@@ -15,7 +15,7 @@ Content-Type: application/json
 
 ### ============ BUCKET TESTS ============
 
-@test_bucket_id = {{create_bucket.response.body.id}}
+@bucket_id = {{create_bucket.response.body.id}}
 
 # @name create_bucket
 POST {{baseUrl}}/buckets/
@@ -35,13 +35,13 @@ Cookie: auth={{sign_in_auth}}
 ###
 
 # @name get_bucket_by_id
-GET {{baseUrl}}/buckets/{{test_bucket_id}}
+GET {{baseUrl}}/buckets/{{bucket_id}}
 Cookie: auth={{sign_in_auth}}
 
 ###
 
 # @name update_bucket
-PUT {{baseUrl}}/buckets/{{test_bucket_id}}
+PUT {{baseUrl}}/buckets/{{bucket_id}}
 Content-Type: application/json
 Cookie: auth={{sign_in_auth}}
 
@@ -51,10 +51,10 @@ Cookie: auth={{sign_in_auth}}
 
 ### ============ ASSET TESTS ============
 
-@test_asset_id = {{create_asset.response.body.id}}
+@asset_id = {{create_asset.response.body.id}}
 
 # @name create_asset
-POST {{baseUrl}}/buckets/{{test_bucket_id}}/assets/
+POST {{baseUrl}}/buckets/{{bucket_id}}/assets/
 Cookie: auth={{sign_in_auth}}
 Content-Type: multipart/form-data; boundary=WebAppBoundary
 
@@ -72,19 +72,19 @@ integration~test~file
 ###
 
 # @name get_assets_by_bucket
-GET {{baseUrl}}/buckets/{{test_bucket_id}}/assets/?cursor=1&limit=10
+GET {{baseUrl}}/buckets/{{bucket_id}}/assets/?cursor=1&limit=10
 Cookie: auth={{sign_in_auth}}
 
 ###
 
 # @name get_asset_by_id
-GET {{baseUrl}}/buckets/{{test_bucket_id}}/assets/{{test_asset_id}}
+GET {{baseUrl}}/buckets/{{bucket_id}}/assets/{{asset_id}}
 Cookie: auth={{sign_in_auth}}
 
 ###
 
 # @name update_asset
-PATCH {{baseUrl}}/buckets/{{test_bucket_id}}/assets/{{test_asset_id}}
+PATCH {{baseUrl}}/buckets/{{bucket_id}}/assets/{{asset_id}}
 Content-Type: application/json
 Cookie: auth={{sign_in_auth}}
 
@@ -95,12 +95,12 @@ Cookie: auth={{sign_in_auth}}
 ###
 
 # @name download_asset
-GET {{baseUrl}}/buckets/{{test_bucket_id}}/assets/{{test_asset_id}}/download
+GET {{baseUrl}}/buckets/{{bucket_id}}/assets/{{asset_id}}/download
 Cookie: auth={{sign_in_auth}}
 
 ### ============ SECRET TESTS ============
 
-@test_secret_id = {{create_secret.response.body.id}}
+@secret_id = {{create_secret.response.body.id}}
 
 # @name create_secret
 POST {{baseUrl}}/secrets/
@@ -121,25 +121,25 @@ Cookie: auth={{sign_in_auth}}
 ###
 
 # @name get_secret_by_id
-GET {{baseUrl}}/secrets/{{test_secret_id}}
+GET {{baseUrl}}/secrets/{{secret_id}}
 Cookie: auth={{sign_in_auth}}
 
 ### ============ CLEANUP ============
 
 # @name delete_secret
-DELETE {{baseUrl}}/secrets/{{test_secret_id}}
+DELETE {{baseUrl}}/secrets/{{secret_id}}
 Cookie: auth={{sign_in_auth}}
 
 ###
 
 # @name delete_asset
-DELETE {{baseUrl}}/buckets/{{test_bucket_id}}/assets/{{test_asset_id}}
+DELETE {{baseUrl}}/buckets/{{bucket_id}}/assets/{{asset_id}}
 Cookie: auth={{sign_in_auth}}
 
 ###
 
 # @name delete_bucket
-DELETE {{baseUrl}}/buckets/{{test_bucket_id}}
+DELETE {{baseUrl}}/buckets/{{bucket_id}}
 Cookie: auth={{sign_in_auth}}
 
 ###
