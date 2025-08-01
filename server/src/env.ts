@@ -14,7 +14,8 @@ const PortSchema = z
 const envSchema = z
   .object({
     NODE_ENV: z.enum(["development", "production"]).default("development"),
-    SECRET_KEY: z.string().default("MOST SECRET VALUE IN HISTORY"),
+    SECRET_KEY: z.string().default("SECRET_JWT_KEY"),
+    MASTER_SECRET_KEY: z.string().default("MASTER_SECRET_ENCRYPTION_KEY"),
 
     ROOT: z.string().default(() => ROOT),
     ROOT_PUBLIC_DIRECTORY: z.string().default(() => normalize(join(ROOT, "PUBLIC"))),
