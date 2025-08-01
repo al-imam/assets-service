@@ -140,4 +140,3 @@ yarn.lock
 *.sqlite-journal
 *.sqlite-shm
 *.sqlite
-/json/*.json

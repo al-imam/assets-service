@@ -18,10 +18,14 @@ const envSchema = z
 
     ROOT: z.string().default(() => ROOT),
     ROOT_PUBLIC_DIRECTORY: z.string().default(() => normalize(join(ROOT, "PUBLIC"))),
-
     TARGET: z.enum(["seed", "migration", "test", "development", "production"]).optional(),
-
     PORT: PortSchema.default(8000),
+
+    CLIENT_BASE_URL: z.string().default("http://localhost:3000"),
+
+    GOOGLE_OAUTH_SECRET: z.string(),
+    GOOGLE_OAUTH_CLIENT_ID: z.string(),
+    GOOGLE_OAUTH_CALLBACK_URL: z.string(),
   })
   .transform(env => ({
     ...env,

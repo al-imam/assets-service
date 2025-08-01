@@ -12,8 +12,9 @@
     "lint": "tsc --noEmit && eslint . --ext .js,.ts",
     "lint:fix": "eslint . --ext .js,.ts --fix",
     "format": "prettier --write .",
-    "prepare": "husky",
-    "commit": "git-cz"
+    "prepare": "cd .. && husky",
+    "commit": "git-cz",
+    "db:prisma": "prisma generate && prisma db push"
   },
   "config": {
     "commitizen": {
@@ -26,6 +27,8 @@
     "url": "https://github.com/al-imam"
   },
   "dependencies": {
+    "@prisma/client": "^6.13.0",
+    "@types/proper-url-join": "^2.1.5",
     "axios": "^1.11.0",
     "bcryptjs": "^3.0.2",
     "chalk": "^5.4.1",
@@ -35,6 +38,8 @@
     "express": "^5.1.0",
     "jose": "^6.0.12",
     "multer": "^2.0.2",
+    "prisma": "^6.13.0",
+    "proper-url-join": "^2.1.2",
     "ulid": "^3.0.1",
     "zod": "^4.0.14"
   },
