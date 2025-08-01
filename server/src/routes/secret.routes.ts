@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { secretController } from "~/controllers/secret.controller";
-import { AuthMiddleware } from "~/middleware/auth.moddleware";
+import { AuthMiddleware } from "~/middleware/auth.middleware";
 
 export const secretRouter = Router();
 

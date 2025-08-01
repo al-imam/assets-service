@@ -1,12 +1,12 @@
+import { writeFileSync } from "fs";
 import { z } from "zod";
 import { db } from "~/db";
 import { NotFoundError } from "~/lib/http";
+import { ensureStorageDirectory, generateStoragePath, getFullFilePath } from "~/lib/multer";
+import { ulid } from "~/lib/uuid";
+import { deleteFile, sanitizeFilename } from "~/utils/file";
 
 export const CreateAssetSchema = z.object({
-  name: z.string().min(1, "Asset name is required").max(255, "Asset name must be less than 255 characters"),
-  size: z.number().int().positive("Asset size must be a positive integer"),
-  keys: z.string().optional(),
-  ref: z.string().min(1, "Asset reference is required"),
   bucketId: z.string().min(1, "Bucket ID is required"),
 });
 
@@ -58,28 +58,45 @@ class AssetService {
   constructor() {}
 
   async createAsset({
-    name,
-    size,
-    keys,
-    ref,
+    file,
     bucketId,
     userId,
+    keys = [],
   }: {
-    name: string;
-    size: number;
-    keys?: string;
-    ref: string;
+    file: Express.Multer.File;
     bucketId: string;
     userId: string;
+    keys: string[];
   }) {
     const bucket = await db.bucket.findFirst({ where: { id: bucketId, userId } });
     if (!bucket) throw new NotFoundError("Bucket not found or you don't have permission to access it");
 
-    const asset = await db.asset.create({
-      data: { name, size, keys: keys || null, ref, bucketId },
-    });
+    const assetId = ulid();
+    const sanitizedName = sanitizeFilename(file.originalname);
+    const sizeInKB = Math.ceil(file.size / 1024);
+    const relativePath = generateStoragePath(userId, bucketId, keys, assetId);
+    ensureStorageDirectory(userId, bucketId);
+    const fullFilePath = getFullFilePath(relativePath);
 
-    return PublicAsset.parse(asset);
+    try {
+      writeFileSync(fullFilePath, file.buffer);
+
+      const asset = await db.asset.create({
+        data: {
+          id: assetId,
+          name: sanitizedName,
+          size: sizeInKB,
+          keys: keys.join("~"),
+          ref: relativePath,
+          bucketId,
+        },
+      });
+
+      return PublicAsset.parse(asset);
+    } catch (error) {
+      deleteFile(fullFilePath);
+      throw error;
+    }
   }
 
   async getAssets(userId: string, cursor: number = 1, limit: number = 10) {
@@ -141,39 +158,42 @@ class AssetService {
     };
   }
 
-  async getAssetById({ id, userId }: { id: string; userId: string }) {
+  async getAssetById({ id, userId, bucketId }: { id: string; userId: string; bucketId: string }) {
     const asset = await db.asset.findFirst({
       include: { bucket: true },
-      where: { id, bucket: { userId } },
+      where: {
+        id,
+        bucketId,
+        bucket: { userId },
+      },
     });
 
     if (!asset) throw new NotFoundError("Asset not found or you don't have permission to access it");
     return AssetWithBucket.parse(asset);
   }
 
-  async updateAsset({ id, name, userId }: { id: string; name: string; userId: string }) {
+  async updateAsset({ id, name, userId, bucketId }: { id: string; name: string; userId: string; bucketId: string }) {
     const existingAsset = await db.asset.findFirst({
-      where: { id, bucket: { userId } },
+      where: { id, bucketId, bucket: { userId } },
       include: { bucket: true },
     });
 
     if (!existingAsset) throw new NotFoundError("Asset not found or you don't have permission to access it");
-
-    const updatedAsset = await db.asset.update({
-      where: { id },
-      data: { name },
-    });
-
+    const updatedAsset = await db.asset.update({ where: { id }, data: { name } });
     return PublicAsset.parse(updatedAsset);
   }
 
-  async deleteAsset({ id, userId }: { id: string; userId: string }) {
+  async deleteAsset({ id, userId, bucketId }: { id: string; userId: string; bucketId: string }) {
     const asset = await db.asset.findFirst({
-      where: { id, bucket: { userId } },
+      where: { id, bucketId, bucket: { userId } },
       include: { bucket: true },
     });
 
     if (!asset) throw new NotFoundError("Asset not found or you don't have permission to access it");
+
+    const fullFilePath = getFullFilePath(asset.ref);
+    deleteFile(fullFilePath);
+
     const deletedAsset = await db.asset.delete({ where: { id } });
     return PublicAsset.parse(deletedAsset);
   }

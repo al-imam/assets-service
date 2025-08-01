@@ -1,45 +1,24 @@
-import multer, { FileFilterCallback, Options } from "multer";
-import { v4 as uuidv4 } from "uuid";
+import multer from "multer";
+import { join } from "path";
+import { env } from "~/env";
 import { ensureFilePathExists } from "~/utils/file";
 
-interface FileUploadOptions {
-  path: string;
-  regex?: RegExp;
-  error?: string;
-  sizeKB?: number;
+export const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024, fieldNameSize: 255, fieldSize: 1024 * 1024 },
+  fileFilter: (_req, _file, cb) => cb(null, true),
+});
+
+export function generateStoragePath(userId: string, bucketId: string, keys: string[], assetId: string): string {
+  const filename = [...keys, assetId].join("~");
+  return join(userId, bucketId, filename);
 }
 
-export const configureMulterOption = ({
-  path,
-  regex = /^image\/(jpeg|png|jpg)$/,
-  error = "Only JPEG and PNG files are allowed",
-  sizeKB = 1024 * 2,
-}: FileUploadOptions): Options => ({
-  storage: multer.diskStorage({
-    destination: (
-      _req: Express.Request,
-      _file: Express.Multer.File,
-      callback: (error: Error | null, destination: string) => void
-    ) => {
-      callback(null, ensureFilePathExists(path));
-    },
+export function getFullFilePath(relativePath: string): string {
+  return join(env.STORAGE_DIRECTORY, relativePath);
+}
 
-    filename: (
-      _req: Express.Request,
-      file: Express.Multer.File,
-      callback: (error: Error | null, filename: string) => void
-    ) => {
-      callback(null, `${uuidv4()}.${file.originalname.split(".").pop()}`);
-    },
-  }),
-
-  fileFilter: (_req: Express.Request, file: Express.Multer.File, callback: FileFilterCallback) => {
-    if (regex.test(file.mimetype)) {
-      callback(null, true);
-    } else {
-      callback(new Error(error));
-    }
-  },
-
-  limits: { fieldNameSize: 255, fileSize: sizeKB * 1024 },
-});
+export function ensureStorageDirectory(userId: string, bucketId: string): string {
+  const dirPath = join(env.STORAGE_DIRECTORY, userId, bucketId);
+  return ensureFilePathExists(dirPath);
+}

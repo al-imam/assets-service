@@ -19,6 +19,9 @@ const envSchema = z
 
     ROOT: z.string().default(() => ROOT),
     ROOT_PUBLIC_DIRECTORY: z.string().default(() => normalize(join(ROOT, "PUBLIC"))),
+
+    STORAGE_DIRECTORY: z.string().default(() => normalize(join(ROOT, "STORAGE"))),
+
     TARGET: z.enum(["seed", "migration", "test", "development", "production"]).optional(),
     PORT: PortSchema.default(8000),
 

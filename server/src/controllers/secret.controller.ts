@@ -1,7 +1,7 @@
 import { Response } from "express";
 import { z } from "zod";
 import { ZodValidationError } from "~/lib/http";
-import { AuthenticatedRequest } from "~/middleware/auth.moddleware";
+import { AuthenticatedRequest } from "~/middleware/auth.middleware";
 import { CreateSecretSchema, secretService } from "~/services/secret.service";
 
 const SecretParamsSchema = z.object({

@@ -1,13 +1,12 @@
 import { Router } from "express";
 import { assetController } from "~/controllers/asset.controller";
-import { AuthMiddleware } from "~/middleware/auth.moddleware";
+import { upload } from "~/lib/multer";
 
 export const assetRouter = Router();
 
-assetRouter.use(AuthMiddleware);
-
-assetRouter.post("/", assetController.createAsset.bind(assetController));
-assetRouter.get("/", assetController.getAssets.bind(assetController));
+assetRouter.post("/", upload.single("file"), assetController.createAsset.bind(assetController));
+assetRouter.get("/", assetController.getAssetsByBucket.bind(assetController));
 assetRouter.get("/:id", assetController.getAssetById.bind(assetController));
-assetRouter.put("/:id", assetController.updateAsset.bind(assetController));
+assetRouter.get("/:id/download", assetController.downloadAsset.bind(assetController));
+assetRouter.patch("/:id", assetController.updateAsset.bind(assetController));
 assetRouter.delete("/:id", assetController.deleteAsset.bind(assetController));
