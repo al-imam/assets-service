@@ -1,0 +1,56 @@
+@baseUrl = http://localhost:8000/api/v1
+
+###
+
+@sign_in_auth = {{sign_in.response.body.auth}}
+
+# @name sign_in
+POST {{baseUrl}}/auth/sign-in
+Content-Type: application/json
+
+{
+  "email": "alimam@example.com",
+  "password": "alimam@example.com"
+}
+
+###
+
+@create_bucket_id = {{create_bucket.response.body.id}}
+
+# @name create_bucket
+POST {{baseUrl}}/buckets/
+Content-Type: application/json
+Cookie: auth={{sign_in_auth}}
+
+{
+  "name": "Test Bucket"
+}
+
+###
+
+# @name get_buckets
+GET {{baseUrl}}/buckets/
+Cookie: auth={{sign_in_auth}}
+
+###
+
+# @name get_bucket_by_id
+GET {{baseUrl}}/buckets/{{create_bucket_id}}
+Cookie: auth={{sign_in_auth}}
+
+###
+
+# @name update_bucket
+PUT {{baseUrl}}/buckets/{{create_bucket_id}}
+Content-Type: application/json
+Cookie: auth={{sign_in_auth}}
+
+{
+  "name": "Updated Test Bucket"
+}
+
+###
+
+# @name delete_bucket
+DELETE {{baseUrl}}/buckets/{{create_bucket_id}}
+Cookie: auth={{sign_in_auth}}

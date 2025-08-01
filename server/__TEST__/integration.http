@@ -1,0 +1,149 @@
+@baseUrl = http://localhost:8000/api/v1
+
+###
+
+@sign_in_auth = {{sign_in.response.body.auth}}
+
+# @name sign_in
+POST {{baseUrl}}/auth/sign-in
+Content-Type: application/json
+
+{
+  "email": "alimam@example.com",
+  "password": "alimam@example.com"
+}
+
+### ============ BUCKET TESTS ============
+
+@test_bucket_id = {{create_bucket.response.body.id}}
+
+# @name create_bucket
+POST {{baseUrl}}/buckets/
+Content-Type: application/json
+Cookie: auth={{sign_in_auth}}
+
+{
+  "name": "Integration Test Bucket"
+}
+
+###
+
+# @name get_buckets
+GET {{baseUrl}}/buckets/
+Cookie: auth={{sign_in_auth}}
+
+###
+
+# @name get_bucket_by_id
+GET {{baseUrl}}/buckets/{{test_bucket_id}}
+Cookie: auth={{sign_in_auth}}
+
+###
+
+# @name update_bucket
+PUT {{baseUrl}}/buckets/{{test_bucket_id}}
+Content-Type: application/json
+Cookie: auth={{sign_in_auth}}
+
+{
+  "name": "Updated Integration Test Bucket"
+}
+
+### ============ ASSET TESTS ============
+
+@test_asset_id = {{create_asset.response.body.id}}
+
+# @name create_asset
+POST {{baseUrl}}/buckets/{{test_bucket_id}}/assets/
+Cookie: auth={{sign_in_auth}}
+Content-Type: multipart/form-data; boundary=WebAppBoundary
+
+--WebAppBoundary
+Content-Disposition: form-data; name="file"; filename="integration-test.txt"
+Content-Type: text/plain
+
+This is an integration test file for the assets service
+--WebAppBoundary
+Content-Disposition: form-data; name="keys"
+
+integration~test~file
+--WebAppBoundary--
+
+###
+
+# @name get_assets_by_bucket
+GET {{baseUrl}}/buckets/{{test_bucket_id}}/assets/?cursor=1&limit=10
+Cookie: auth={{sign_in_auth}}
+
+###
+
+# @name get_asset_by_id
+GET {{baseUrl}}/buckets/{{test_bucket_id}}/assets/{{test_asset_id}}
+Cookie: auth={{sign_in_auth}}
+
+###
+
+# @name update_asset
+PATCH {{baseUrl}}/buckets/{{test_bucket_id}}/assets/{{test_asset_id}}
+Content-Type: application/json
+Cookie: auth={{sign_in_auth}}
+
+{
+  "name": "updated-integration-test.txt"
+}
+
+###
+
+# @name download_asset
+GET {{baseUrl}}/buckets/{{test_bucket_id}}/assets/{{test_asset_id}}/download
+Cookie: auth={{sign_in_auth}}
+
+### ============ SECRET TESTS ============
+
+@test_secret_id = {{create_secret.response.body.id}}
+
+# @name create_secret
+POST {{baseUrl}}/secrets/
+Content-Type: application/json
+Cookie: auth={{sign_in_auth}}
+
+{
+  "secret": "This is an integration test secret",
+  "expiresAt": "2025-12-31T23:59:59.000Z"
+}
+
+###
+
+# @name get_secrets
+GET {{baseUrl}}/secrets/
+Cookie: auth={{sign_in_auth}}
+
+###
+
+# @name get_secret_by_id
+GET {{baseUrl}}/secrets/{{test_secret_id}}
+Cookie: auth={{sign_in_auth}}
+
+### ============ CLEANUP ============
+
+# @name delete_secret
+DELETE {{baseUrl}}/secrets/{{test_secret_id}}
+Cookie: auth={{sign_in_auth}}
+
+###
+
+# @name delete_asset
+DELETE {{baseUrl}}/buckets/{{test_bucket_id}}/assets/{{test_asset_id}}
+Cookie: auth={{sign_in_auth}}
+
+###
+
+# @name delete_bucket
+DELETE {{baseUrl}}/buckets/{{test_bucket_id}}
+Cookie: auth={{sign_in_auth}}
+
+###
+
+# @name delete_expired_secrets
+DELETE {{baseUrl}}/secrets/expired/cleanup
+Cookie: auth={{sign_in_auth}}

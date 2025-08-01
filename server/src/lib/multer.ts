@@ -1,5 +1,5 @@
 import multer from "multer";
-import { join } from "path";
+import path from "path";
 import { env } from "~/env";
 import { ensureFilePathExists } from "~/utils/file";
 
@@ -11,14 +11,14 @@ export const upload = multer({
 
 export function generateStoragePath(userId: string, bucketId: string, keys: string[], assetId: string): string {
   const filename = [...keys, assetId].join("~");
-  return join(userId, bucketId, filename);
+  return path.posix.join(userId, bucketId, filename);
 }
 
 export function getFullFilePath(relativePath: string): string {
-  return join(env.STORAGE_DIRECTORY, relativePath);
+  return path.posix.join(env.STORAGE_DIRECTORY, relativePath);
 }
 
 export function ensureStorageDirectory(userId: string, bucketId: string): string {
-  const dirPath = join(env.STORAGE_DIRECTORY, userId, bucketId);
+  const dirPath = path.posix.join(env.STORAGE_DIRECTORY, userId, bucketId);
   return ensureFilePathExists(dirPath);
 }

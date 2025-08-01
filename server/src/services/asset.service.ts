@@ -6,10 +6,6 @@ import { ensureStorageDirectory, generateStoragePath, getFullFilePath } from "~/
 import { ulid } from "~/lib/uuid";
 import { deleteFile, sanitizeFilename } from "~/utils/file";
 
-export const CreateAssetSchema = z.object({
-  bucketId: z.string().min(1, "Bucket ID is required"),
-});
-
 export const AssetPaginationSchema = z.object({
   cursor: z.number().int().min(1).default(1),
   limit: z.number().int().min(1).max(100).default(10),
