@@ -28,6 +28,23 @@ Cookie: auth={{sign_in_auth}}
 
 ###
 
+@configured_bucket_id = {{create_configured_bucket.response.body.id}}
+
+# @name create_configured_bucket
+POST {{baseUrl}}/buckets/
+Content-Type: application/json
+Cookie: auth={{sign_in_auth}}
+
+{
+  "name": "Configured Bucket Assets",
+  "config": {
+    "allowedFileTypes": [".txt", "image/*"],
+    "maxFileSize": 2097152
+  }
+}
+
+###
+
 @created_asset_id = {{create_asset.response.body.id}}
 
 # @name create_asset
@@ -48,14 +65,66 @@ tag1~tag2~category
 
 ###
 
+@configured_asset_id = {{create_configured_asset.response.body.id}}
+
+# @name create_configured_asset
+POST {{baseUrl}}/buckets/{{configured_bucket_id}}/assets/
+Cookie: auth={{sign_in_auth}}
+Content-Type: multipart/form-data; boundary=WebAppBoundary
+
+--WebAppBoundary
+Content-Disposition: form-data; name="file"; filename="configured-test.txt"
+Content-Type: text/plain
+
+This is a test file for configured bucket upload
+--WebAppBoundary
+Content-Disposition: form-data; name="keys"
+
+configured~test~file
+--WebAppBoundary--
+
+###
+
+# @name create_invalid_asset_type
+POST {{baseUrl}}/buckets/{{configured_bucket_id}}/assets/
+Cookie: auth={{sign_in_auth}}
+Content-Type: multipart/form-data; boundary=WebAppBoundary
+
+--WebAppBoundary
+Content-Disposition: form-data; name="file"; filename="test.json"
+Content-Type: application/json
+
+{"test": "This should fail due to file type restrictions"}
+--WebAppBoundary
+Content-Disposition: form-data; name="keys"
+
+invalid~type~test
+--WebAppBoundary--
+
+###
+
+###
+
 # @name get_assets_by_bucket
 GET {{baseUrl}}/buckets/{{bucket_id}}/assets/?cursor=1&limit=10
 Cookie: auth={{sign_in_auth}}
 
 ###
 
+# @name get_configured_assets_by_bucket
+GET {{baseUrl}}/buckets/{{configured_bucket_id}}/assets/?cursor=1&limit=10
+Cookie: auth={{sign_in_auth}}
+
+###
+
 # @name get_asset_by_id
 GET {{baseUrl}}/buckets/{{bucket_id}}/assets/{{created_asset_id}}
+Cookie: auth={{sign_in_auth}}
+
+###
+
+# @name get_configured_asset_by_id
+GET {{baseUrl}}/buckets/{{configured_bucket_id}}/assets/{{configured_asset_id}}
 Cookie: auth={{sign_in_auth}}
 
 ###
@@ -71,8 +140,25 @@ Cookie: auth={{sign_in_auth}}
 
 ###
 
+# @name update_configured_asset
+PATCH {{baseUrl}}/buckets/{{configured_bucket_id}}/assets/{{configured_asset_id}}
+Content-Type: application/json
+Cookie: auth={{sign_in_auth}}
+
+{
+  "name": "updated-configured-test-file.txt"
+}
+
+###
+
 # @name download_asset
 GET {{baseUrl}}/buckets/{{bucket_id}}/assets/{{created_asset_id}}/download
+Cookie: auth={{sign_in_auth}}
+
+###
+
+# @name download_configured_asset
+GET {{baseUrl}}/buckets/{{configured_bucket_id}}/assets/{{configured_asset_id}}/download
 Cookie: auth={{sign_in_auth}}
 
 ###
@@ -83,6 +169,18 @@ Cookie: auth={{sign_in_auth}}
 
 ###
 
+# @name delete_configured_asset
+DELETE {{baseUrl}}/buckets/{{configured_bucket_id}}/assets/{{configured_asset_id}}
+Cookie: auth={{sign_in_auth}}
+
+###
+
 # @name cleanup_bucket
 DELETE {{baseUrl}}/buckets/{{bucket_id}}
+Cookie: auth={{sign_in_auth}}
+
+###
+
+# @name cleanup_configured_bucket
+DELETE {{baseUrl}}/buckets/{{configured_bucket_id}}
 Cookie: auth={{sign_in_auth}}

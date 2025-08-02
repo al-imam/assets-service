@@ -15,6 +15,7 @@ export class BucketController {
 
     const bucket = await bucketService.createBucket({
       name: validation.data.name,
+      config: validation.data.config,
       userId: req.user!.id,
     });
 
@@ -48,6 +49,7 @@ export class BucketController {
     const bucket = await bucketService.updateBucket({
       id: paramsValidation.data.id,
       name: validation.data.name,
+      config: validation.data.config,
       userId: req.user!.id,
     });
 

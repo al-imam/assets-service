@@ -6,11 +6,13 @@ import { encrypt } from "~/lib/secret";
 export const CreateSecretSchema = z.object({
   secret: z.string().min(1, "Secret is required"),
   expiresAt: z.iso.datetime().optional(),
+  validationUri: z.url("Invalid validation URI").optional(),
 });
 
 export const UpdateSecretSchema = z.object({
   secret: z.string().min(1, "Secret is required"),
   expiresAt: z.iso.datetime().optional(),
+  validationUri: z.url("Invalid validation URI").optional(),
 });
 
 export const PublicSecret = z.object({
@@ -20,6 +22,7 @@ export const PublicSecret = z.object({
     .date()
     .nullable()
     .transform(date => date?.toISOString() || null),
+  validationUri: z.string().nullable(),
   userId: z.string(),
   createdAt: z.coerce.date().transform(date => date.toISOString()),
   updatedAt: z.coerce.date().transform(date => date.toISOString()),
@@ -28,9 +31,24 @@ export const PublicSecret = z.object({
 class SecretService {
   constructor() {}
 
-  async createSecret({ secret, expiresAt, userId }: { secret: string; expiresAt?: string; userId: string }) {
+  async createSecret({
+    secret,
+    expiresAt,
+    validationUri,
+    userId,
+  }: {
+    secret: string;
+    expiresAt?: string;
+    validationUri?: string;
+    userId: string;
+  }) {
     const secretData = await db.secret.create({
-      data: { secret: encrypt(secret), expiresAt: expiresAt ? new Date(expiresAt) : null, userId },
+      data: {
+        secret: encrypt(secret),
+        expiresAt: expiresAt ? new Date(expiresAt) : null,
+        validationUri: validationUri ?? null,
+        userId,
+      },
     });
 
     return PublicSecret.parse(secretData);

@@ -28,6 +28,23 @@ Cookie: auth={{sign_in_auth}}
 
 ###
 
+@create_configured_bucket_id = {{create_configured_bucket.response.body.id}}
+
+# @name create_configured_bucket
+POST {{baseUrl}}/buckets/
+Content-Type: application/json
+Cookie: auth={{sign_in_auth}}
+
+{
+  "name": "Configured Test Bucket",
+  "config": {
+    "allowedFileTypes": [".txt", ".pdf", "image/*"],
+    "maxFileSize": 5242880
+  }
+}
+
+###
+
 # @name get_buckets
 GET {{baseUrl}}/buckets/
 Cookie: auth={{sign_in_auth}}
@@ -36,6 +53,12 @@ Cookie: auth={{sign_in_auth}}
 
 # @name get_bucket_by_id
 GET {{baseUrl}}/buckets/{{create_bucket_id}}
+Cookie: auth={{sign_in_auth}}
+
+###
+
+# @name get_configured_bucket_by_id
+GET {{baseUrl}}/buckets/{{create_configured_bucket_id}}
 Cookie: auth={{sign_in_auth}}
 
 ###
@@ -51,6 +74,27 @@ Cookie: auth={{sign_in_auth}}
 
 ###
 
+# @name update_bucket_with_config
+PUT {{baseUrl}}/buckets/{{create_configured_bucket_id}}
+Content-Type: application/json
+Cookie: auth={{sign_in_auth}}
+
+{
+  "name": "Updated Configured Test Bucket",
+  "config": {
+    "allowedFileTypes": [".txt", ".md", "image/png"],
+    "maxFileSize": 10485760
+  }
+}
+
+###
+
 # @name delete_bucket
 DELETE {{baseUrl}}/buckets/{{create_bucket_id}}
+Cookie: auth={{sign_in_auth}}
+
+###
+
+# @name delete_configured_bucket
+DELETE {{baseUrl}}/buckets/{{create_configured_bucket_id}}
 Cookie: auth={{sign_in_auth}}

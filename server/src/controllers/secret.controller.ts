@@ -16,6 +16,7 @@ export class SecretController {
     const secret = await secretService.createSecret({
       secret: validation.data.secret,
       expiresAt: validation.data.expiresAt,
+      validationUri: validation.data.validationUri,
       userId: req.user!.id,
     });
 
