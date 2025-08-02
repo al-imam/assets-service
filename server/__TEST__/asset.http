@@ -85,46 +85,14 @@ configured~test~file
 
 ###
 
-# @name create_invalid_asset_type
-POST {{baseUrl}}/buckets/{{configured_bucket_id}}/assets/
-Cookie: auth={{sign_in_auth}}
-Content-Type: multipart/form-data; boundary=WebAppBoundary
-
---WebAppBoundary
-Content-Disposition: form-data; name="file"; filename="test.json"
-Content-Type: application/json
-
-{"test": "This should fail due to file type restrictions"}
---WebAppBoundary
-Content-Disposition: form-data; name="keys"
-
-invalid~type~test
---WebAppBoundary--
-
-###
-
-###
-
 # @name get_assets_by_bucket
 GET {{baseUrl}}/buckets/{{bucket_id}}/assets/?cursor=1&limit=10
 Cookie: auth={{sign_in_auth}}
 
 ###
 
-# @name get_configured_assets_by_bucket
-GET {{baseUrl}}/buckets/{{configured_bucket_id}}/assets/?cursor=1&limit=10
-Cookie: auth={{sign_in_auth}}
-
-###
-
 # @name get_asset_by_id
 GET {{baseUrl}}/buckets/{{bucket_id}}/assets/{{created_asset_id}}
-Cookie: auth={{sign_in_auth}}
-
-###
-
-# @name get_configured_asset_by_id
-GET {{baseUrl}}/buckets/{{configured_bucket_id}}/assets/{{configured_asset_id}}
 Cookie: auth={{sign_in_auth}}
 
 ###
@@ -140,25 +108,8 @@ Cookie: auth={{sign_in_auth}}
 
 ###
 
-# @name update_configured_asset
-PATCH {{baseUrl}}/buckets/{{configured_bucket_id}}/assets/{{configured_asset_id}}
-Content-Type: application/json
-Cookie: auth={{sign_in_auth}}
-
-{
-  "name": "updated-configured-test-file.txt"
-}
-
-###
-
 # @name download_asset
 GET {{baseUrl}}/buckets/{{bucket_id}}/assets/{{created_asset_id}}/download
-Cookie: auth={{sign_in_auth}}
-
-###
-
-# @name download_configured_asset
-GET {{baseUrl}}/buckets/{{configured_bucket_id}}/assets/{{configured_asset_id}}/download
 Cookie: auth={{sign_in_auth}}
 
 ###

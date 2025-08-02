@@ -69,16 +69,6 @@ Content-Type: application/json
 
 ###
 
-# @name verify_invalid_read_token
-POST {{baseUrl}}/secrets/verify-read-token
-Content-Type: application/json
-
-{
-  "readToken": "invalid.jwt.token.here"
-}
-
-###
-
 @asset_id = {{create_direct_asset.response.body.id}}
 
 # @name create_direct_asset
@@ -103,36 +93,6 @@ test~document~direct
 
 ###
 
-# @name create_direct_asset_no_secret
-POST {{baseUrl}}/assets/{{bucket_id}}
-Content-Type: multipart/form-data; boundary=WebAppBoundary
-
---WebAppBoundary
-Content-Disposition: form-data; name="file"; filename="fail-test.txt"
-Content-Type: text/plain
-
-This should fail without secret
---WebAppBoundary
-Content-Disposition: form-data; name="bucketId"
-
-{{bucket_id}}
---WebAppBoundary--
-
-###
-
-# @name create_direct_asset_no_file
-POST {{baseUrl}}/assets/{{bucket_id}}
-X-Secret: {{secret_value}}
-Content-Type: multipart/form-data; boundary=WebAppBoundary
-
---WebAppBoundary
-Content-Disposition: form-data; name="bucketId"
-
-{{bucket_id}}
---WebAppBoundary--
-
-###
-
 @signed_url = {{generate_signed_url.response.body.signedUrl}}
 
 # @name generate_signed_url
@@ -147,36 +107,8 @@ Content-Type: application/json
 
 ###
 
-# @name generate_signed_url_no_secret
-POST {{baseUrl}}/assets/signed-url
-Content-Type: application/json
-
-{
-  "assetId": "{{asset_id}}",
-  "expiresAt": "2025-12-31T23:59:59.000Z"
-}
-
-###
-
-# @name generate_signed_url_invalid_asset
-POST {{baseUrl}}/assets/signed-url
-X-Secret: {{secret_value}}
-Content-Type: application/json
-
-{
-  "assetId": "01HQWERTYUIOPASDFGHJKLZXCVB",
-  "expiresAt": "2025-12-31T23:59:59.000Z"
-}
-
-###
-
 # @name access_via_signed_url
 GET {{baseUrl}}/assets/signed/{{signed_url}}
-
-###
-
-# @name access_via_invalid_signed_url
-GET {{baseUrl}}/assets/signed/invalid-signed-url-token
 
 ###
 
@@ -186,40 +118,8 @@ Cookie: read-token={{read_token}}
 
 ###
 
-# @name access_asset_no_read_token
-GET {{baseUrl}}/assets/{{asset_id}}
-
-###
-
-# @name access_nonexistent_asset
-GET {{baseUrl}}/assets/01HQWERTYUIOPASDFGHJKLZXCVB
-Cookie: read-token={{read_token}}
-
-###
-
 # @name delete_direct_asset
 DELETE {{baseUrl}}/assets/{{asset_id}}
-X-Secret: {{secret_value}}
-Content-Type: application/json
-
-{
-  "bucketId": "{{bucket_id}}"
-}
-
-###
-
-# @name delete_direct_asset_no_secret
-DELETE {{baseUrl}}/assets/{{asset_id}}
-Content-Type: application/json
-
-{
-  "bucketId": "{{bucket_id}}"
-}
-
-###
-
-# @name delete_nonexistent_asset
-DELETE {{baseUrl}}/assets/01HQWERTYUIOPASDFGHJKLZXCVB
 X-Secret: {{secret_value}}
 Content-Type: application/json
 

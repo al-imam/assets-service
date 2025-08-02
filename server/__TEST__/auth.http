@@ -41,7 +41,48 @@ Content-Type: application/json
   "password": "alimam@example.com"
 }
 
+###
 
-### @name get_current_user
+# @name get_current_user
 GET {{baseUrl}}/auth/me
 Cookie: auth={{sign_in_auth}}
+
+###
+
+@password_change_auth = {{password_change_request.response.body.auth}}
+
+# @name password_change_request
+POST {{baseUrl}}/auth/password/change
+Content-Type: application/json
+
+{
+  "email": "alimam@example.com",
+  "password": "newpassword123"
+}
+
+###
+
+# @name password_change_verify
+POST {{baseUrl}}/auth/password/change/verify
+Content-Type: application/json
+
+{
+  "auth": "{{password_change_auth}}",
+  "code": "046071"
+}
+
+###
+
+# @name sign_out
+POST {{baseUrl}}/auth/sign-out
+Cookie: auth={{sign_in_auth}}
+
+###
+
+# @name google_auth_init
+GET {{baseUrl}}/auth/google
+
+###
+
+# @name google_callback
+GET {{baseUrl}}/auth/google/callback?code=test_code&state=test
