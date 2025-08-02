@@ -23,7 +23,7 @@ Content-Type: application/json
 Cookie: auth={{sign_in_auth}}
 
 {
-  "name": "Direct Asset Access Test Bucket"
+  "name": "Asset Access Test Bucket"
 }
 
 ###
@@ -88,7 +88,7 @@ Content-Disposition: form-data; name="bucketId"
 --WebAppBoundary
 Content-Disposition: form-data; name="keys"
 
-test~document~direct
+test.txt~document~direct
 --WebAppBoundary--
 
 ###
@@ -102,13 +102,14 @@ Content-Type: application/json
 
 {
   "assetId": "{{asset_id}}",
+  "bucketId": "{{bucket_id}}",
   "expiresAt": "2025-12-31T23:59:59.000Z"
 }
 
 ###
 
 # @name access_via_signed_url
-GET {{baseUrl}}/assets/signed/{{signed_url}}
+GET {{baseUrl}}{{signed_url}}
 
 ###
 

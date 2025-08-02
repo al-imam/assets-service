@@ -25,7 +25,7 @@ Content-Type: application/json
 
 {
   "auth": "{{sign_up_request_auth}}",
-  "code": "046071"
+  "code": "511540"
 }
 
 ###

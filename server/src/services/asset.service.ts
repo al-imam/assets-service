@@ -8,7 +8,7 @@ import { safeDecode, safeVerify, sign } from "~/lib/jwt";
 import { ensureStorageDirectory, generateStoragePath, getFullFilePath, hasFile } from "~/lib/multer";
 import { decrypt, encrypt } from "~/lib/secret";
 import { ulid } from "~/lib/uuid";
-import { deleteFile, sanitizeFilename } from "~/utils/file";
+import { deleteFile, removeExtension, sanitizeFilename } from "~/utils/file";
 
 export const AssetPaginationSchema = z.object({
   cursor: z.number().int().min(1).default(1),
@@ -20,7 +20,7 @@ export const UpdateAssetSchema = z.object({
 });
 
 export const GenerateSignedUrlSchema = z.object({
-  assetId: z.string().min(1, "Asset ID is required"),
+  assetId: z.string().min(1, "Asset ID is required").transform(removeExtension),
   bucketId: z.string().min(1, "Bucket ID is required"),
   secret: z.string().min(1, "Secret is required"),
   expireInMinutes: z.number().int().min(1).max(1440).default(60),
@@ -233,7 +233,7 @@ class AssetService {
 
     const bucket = await db.bucket.findFirst({ where: { id: bucketId, userId: secret.userId } });
     if (!bucket) throw new NotFoundError("Bucket not found or access denied");
-    const asset = await db.asset.findFirst({ where: { id: assetId, bucketId } });
+    const asset = await db.asset.findFirst({ where: { id: removeExtension(assetId), bucketId } });
     if (!asset) throw new NotFoundError("Asset not found in the specified bucket");
 
     const expiresAt = new Date(Date.now() + expireInMinutes * 60 * 1000);

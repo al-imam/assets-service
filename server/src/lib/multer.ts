@@ -4,7 +4,7 @@ import path from "path";
 import z from "zod";
 import { env } from "~/env";
 import { BucketConfigSchema } from "~/services/bucket.service";
-import { ensureFilePathExists } from "~/utils/file";
+import { ensureFilePathExists, removeExtension } from "~/utils/file";
 
 export const upload = multer({
   storage: multer.memoryStorage(),
@@ -65,7 +65,7 @@ export function generateStoragePath(
   assetId: string,
   ext: string
 ): string {
-  const filename = [...(keys ?? []), assetId].join("~") + ext;
+  const filename = [...(keys ?? []), removeExtension(assetId)].join("~") + ext;
   return path.posix.join(userId, bucketId, filename);
 }
 

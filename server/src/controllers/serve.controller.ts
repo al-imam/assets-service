@@ -20,7 +20,11 @@ const ServeCreateAssetSchema = z.object({
 
 export class ServeController {
   async generateSignedUrl(req: Request, res: Response) {
-    const validation = GenerateSignedUrlSchema.safeParse({ ...req.body, secret: getSecret(req) });
+    const validation = GenerateSignedUrlSchema.safeParse({
+      ...req.body,
+      secret: getSecret(req),
+    });
+
     if (!validation.success) throw new ZodValidationError(validation.error);
     const signedUrl = await assetService.generateSignedUrl(validation.data);
     res.json(signedUrl);
@@ -86,6 +90,10 @@ export class ServeController {
       res.setHeader("Content-Disposition", `inline; filename="${asset.name}"`);
       res.setHeader("Cache-Control", "private, max-age=3600");
       return createReadStream(fullFilePath).pipe(res);
+    }
+
+    if (!req.cookies["read-token"]) {
+      throw new UnauthorizedError("Read token is required to access this asset");
     }
 
     const readToken = z.jwt().parse(req.cookies["read-token"]);
