@@ -140,3 +140,5 @@ yarn.lock
 *.sqlite-journal
 *.sqlite-shm
 *.sqlite
+
+STORAGE

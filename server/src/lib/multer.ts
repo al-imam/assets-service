@@ -57,8 +57,14 @@ export function createBucketAwareUpload(bucketConfig: z.infer<typeof BucketConfi
   });
 }
 
-export function generateStoragePath(userId: string, bucketId: string, keys: string[], assetId: string): string {
-  const filename = [...keys, assetId].join("~");
+export function generateStoragePath(
+  userId: string,
+  bucketId: string,
+  keys: string[],
+  assetId: string,
+  ext: string
+): string {
+  const filename = [...keys, assetId].join("~") + ext;
   return path.posix.join(userId, bucketId, filename);
 }
 

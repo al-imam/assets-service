@@ -1,4 +1,5 @@
 import { writeFileSync } from "fs";
+import path from "path";
 import { z } from "zod";
 import { db } from "~/db";
 import { NotFoundError } from "~/lib/http";
@@ -70,7 +71,7 @@ class AssetService {
     const assetId = ulid();
     const sanitizedName = sanitizeFilename(file.originalname);
     const sizeInKB = Math.ceil(file.size / 1024);
-    const relativePath = generateStoragePath(userId, bucketId, keys, assetId);
+    const relativePath = generateStoragePath(userId, bucketId, keys, assetId, path.extname(sanitizedName));
     ensureStorageDirectory(userId, bucketId);
     const fullFilePath = getFullFilePath(relativePath);
 
