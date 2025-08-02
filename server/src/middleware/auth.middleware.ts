@@ -2,6 +2,7 @@ import { NextFunction, Request, Response } from "express";
 import z from "zod";
 import { UnauthorizedError } from "~/lib/http";
 import { authService, PublicUser } from "~/services/auth.service";
+import { secretService } from "~/services/secret.service";
 
 const jwtSchema = z.jwt();
 
@@ -34,5 +35,31 @@ export async function AuthMiddleware(req: AuthenticatedRequest, res: Response, n
   if (!user) throw new UnauthorizedError("You are not authorized");
 
   req.user = user;
+  next();
+}
+
+export type SecretRequest = Request & {
+  _secret?: Awaited<ReturnType<typeof secretService.verifySecret>> | null;
+};
+
+function getSecret(req: Request): string | null {
+  const secretHeader = req.headers["x-secret"];
+
+  if (typeof secretHeader === "string") return secretHeader;
+  const secretCookie = req.cookies.secret;
+  if (typeof secretCookie === "string") return secretCookie;
+
+  return null;
+}
+
+export async function SecretMiddleware(req: SecretRequest, res: Response, next: NextFunction) {
+  const secret = getSecret(req);
+
+  if (!secret) throw new UnauthorizedError("You are not authenticated");
+  const verifiedSecret = await secretService.verifySecret(secret);
+
+  if (!verifiedSecret) throw new UnauthorizedError("You are not authorized");
+  req._secret = verifiedSecret;
+
   next();
 }

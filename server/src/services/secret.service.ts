@@ -191,6 +191,20 @@ class SecretService {
 
     return EncryptedSecretSchema.parse(verifyValue);
   }
+
+  async verifySecret(apiSecret: string) {
+    const secret = await db.secret.findFirst({
+      where: { secret: encrypt(apiSecret) },
+      include: { user: true },
+    });
+
+    if (!secret) throw new NotFoundError("Secret not found");
+    if (secret.expiresAt && secret.expiresAt < new Date()) {
+      throw new UnauthorizedError("Secret has expired");
+    }
+
+    return secret;
+  }
 }
 
 export const secretService = new SecretService();
