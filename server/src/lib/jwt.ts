@@ -1,4 +1,4 @@
-import { JWTHeaderParameters, JWTVerifyOptions, SignJWT, jwtVerify } from "jose";
+import { JWTHeaderParameters, JWTVerifyOptions, SignJWT, decodeJwt, jwtVerify } from "jose";
 import { env } from "~/env";
 import { createSecretKey } from "~/utils/crypto";
 
@@ -36,6 +36,15 @@ export async function verify<T>(jwt: string, options: VerifyOptions = {}) {
   const parsed = await jwtVerify(jwt, secret, options);
 
   return parsed.payload.payload as T;
+}
+
+export function safeDecode<T = Record<string, unknown>>(jwt: string): [T, null] | [null, Error] {
+  try {
+    const parsed = decodeJwt<{ payload: T }>(jwt);
+    return [parsed.payload, null];
+  } catch (error) {
+    return [null, error as Error];
+  }
 }
 
 export async function safeVerify<T = Record<string, unknown>>(
