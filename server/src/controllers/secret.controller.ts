@@ -1,7 +1,7 @@
 import { Response } from "express";
 import { z } from "zod";
 import { ZodValidationError } from "~/lib/http";
-import { AuthenticatedRequest } from "~/middleware/auth.middleware";
+import { AuthenticatedRequest, getSecret } from "~/middleware/auth.middleware";
 import { CreateSecretSchema, GenerateReadTokenSchema, secretService } from "~/services/secret.service";
 
 const SecretParamsSchema = z.object({
@@ -33,6 +33,7 @@ export class SecretController {
   }
 
   async getSecretById(req: AuthenticatedRequest, res: Response) {
+    console.log("Fetching secret by ID:", req.user);
     const paramsValidation = SecretParamsSchema.safeParse(req.params);
     if (!paramsValidation.success) throw new ZodValidationError(paramsValidation.error);
 
@@ -62,7 +63,7 @@ export class SecretController {
   }
 
   async generateReadToken(req: AuthenticatedRequest, res: Response) {
-    const result = GenerateReadTokenSchema.safeParse(req.body);
+    const result = GenerateReadTokenSchema.safeParse({ ...req.body, secret: getSecret(req) });
     if (!result.success) throw new ZodValidationError(result.error);
     const readToken = await secretService.generateReadToken(result.data);
     res.json(readToken);

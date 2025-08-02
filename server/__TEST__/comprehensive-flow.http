@@ -1,0 +1,515 @@
+@baseUrl = http://localhost:8000/api/v1
+
+### ============ COMPREHENSIVE ASSET SERVICE INTEGRATION TEST ============
+### This test covers the complete flow of authentication, buckets, assets, and secrets
+
+### STEP 1: Authentication Flow
+@sign_up_auth = {{user_signup.response.body.auth}}
+
+# @name user_signup
+POST {{baseUrl}}/auth/sign-up/
+Content-Type: application/json
+
+{
+  "email": "comprehensive@example.com",
+  "password": "comprehensive@example.com",
+  "name": "Comprehensive Test User"
+}
+
+###
+
+@verified_auth = {{user_signup_verify.response.body.auth}}
+
+# @name user_signup_verify
+POST {{baseUrl}}/auth/sign-up/verify
+Content-Type: application/json
+
+{
+  "auth": "{{sign_up_auth}}",
+  "code": "046071"
+}
+
+###
+
+@sign_in_auth = {{user_signin.response.body.auth}}
+
+# @name user_signin
+POST {{baseUrl}}/auth/sign-in
+Content-Type: application/json
+
+{
+  "email": "comprehensive@example.com",
+  "password": "comprehensive@example.com"
+}
+
+###
+
+# @name get_current_user_info
+GET {{baseUrl}}/auth/me
+Cookie: auth={{sign_in_auth}}
+
+### STEP 2: Bucket Management
+
+@standard_bucket_id = {{create_standard_bucket.response.body.id}}
+
+# @name create_standard_bucket
+POST {{baseUrl}}/buckets/
+Content-Type: application/json
+Cookie: auth={{sign_in_auth}}
+
+{
+  "name": "Comprehensive Test Standard Bucket"
+}
+
+###
+
+@configured_bucket_id = {{create_configured_bucket.response.body.id}}
+
+# @name create_configured_bucket
+POST {{baseUrl}}/buckets/
+Content-Type: application/json
+Cookie: auth={{sign_in_auth}}
+
+{
+  "name": "Comprehensive Test Configured Bucket",
+  "config": {
+    "allowedFileTypes": [".txt", ".pdf", "image/*", ".md"],
+    "maxFileSize": 5242880
+  }
+}
+
+###
+
+# @name list_all_buckets
+GET {{baseUrl}}/buckets/
+Cookie: auth={{sign_in_auth}}
+
+###
+
+# @name get_standard_bucket_details
+GET {{baseUrl}}/buckets/{{standard_bucket_id}}
+Cookie: auth={{sign_in_auth}}
+
+###
+
+# @name get_configured_bucket_details
+GET {{baseUrl}}/buckets/{{configured_bucket_id}}
+Cookie: auth={{sign_in_auth}}
+
+### STEP 3: Asset Upload and Management
+
+@asset_in_standard_bucket_id = {{upload_asset_standard.response.body.id}}
+
+# @name upload_asset_standard
+POST {{baseUrl}}/buckets/{{standard_bucket_id}}/assets/
+Cookie: auth={{sign_in_auth}}
+Content-Type: multipart/form-data; boundary=WebAppBoundary
+
+--WebAppBoundary
+Content-Disposition: form-data; name="file"; filename="comprehensive-test.txt"
+Content-Type: text/plain
+
+This is a comprehensive test file uploaded to the standard bucket.
+It contains multiple lines of text to test the complete asset functionality.
+Line 3: Testing asset management
+Line 4: Testing download capabilities
+Line 5: Testing access controls
+--WebAppBoundary
+Content-Disposition: form-data; name="keys"
+
+comprehensive~test~standard~file
+--WebAppBoundary--
+
+###
+
+@asset_in_configured_bucket_id = {{upload_asset_configured.response.body.id}}
+
+# @name upload_asset_configured
+POST {{baseUrl}}/buckets/{{configured_bucket_id}}/assets/
+Cookie: auth={{sign_in_auth}}
+Content-Type: multipart/form-data; boundary=WebAppBoundary
+
+--WebAppBoundary
+Content-Disposition: form-data; name="file"; filename="comprehensive-configured.md"
+Content-Type: text/markdown
+
+# Comprehensive Test Markdown File
+
+This is a **markdown file** uploaded to the configured bucket.
+
+## Features Tested
+- Asset upload to configured bucket
+- File type validation
+- Size validation
+- Key-based access control
+
+### Content
+```
+Testing code blocks in markdown
+```
+
+*End of test file*
+--WebAppBoundary
+Content-Disposition: form-data; name="keys"
+
+comprehensive~configured~markdown~documentation
+--WebAppBoundary--
+
+###
+
+# @name list_standard_bucket_assets
+GET {{baseUrl}}/buckets/{{standard_bucket_id}}/assets/?cursor=1&limit=10
+Cookie: auth={{sign_in_auth}}
+
+###
+
+# @name list_configured_bucket_assets
+GET {{baseUrl}}/buckets/{{configured_bucket_id}}/assets/?cursor=1&limit=10
+Cookie: auth={{sign_in_auth}}
+
+###
+
+# @name get_standard_asset_details
+GET {{baseUrl}}/buckets/{{standard_bucket_id}}/assets/{{asset_in_standard_bucket_id}}
+Cookie: auth={{sign_in_auth}}
+
+###
+
+# @name get_configured_asset_details
+GET {{baseUrl}}/buckets/{{configured_bucket_id}}/assets/{{asset_in_configured_bucket_id}}
+Cookie: auth={{sign_in_auth}}
+
+### STEP 4: Secret Management and Access Control
+
+@secret_for_standard_id = {{create_secret_standard.response.body.id}}
+
+# @name create_secret_standard
+POST {{baseUrl}}/secrets/
+Content-Type: application/json
+Cookie: auth={{sign_in_auth}}
+
+{
+  "secret": "Comprehensive test secret for standard bucket access",
+  "expiresAt": "2025-12-31T23:59:59.000Z",
+  "validationUri": "https://example.com/validate-comprehensive"
+}
+
+###
+
+@secret_for_configured_id = {{create_secret_configured.response.body.id}}
+
+# @name create_secret_configured
+POST {{baseUrl}}/secrets/
+Content-Type: application/json
+Cookie: auth={{sign_in_auth}}
+
+{
+  "secret": "Comprehensive test secret for configured bucket access",
+  "expiresAt": "2025-12-31T23:59:59.000Z"
+}
+
+###
+
+# @name list_all_secrets
+GET {{baseUrl}}/secrets/
+Cookie: auth={{sign_in_auth}}
+
+###
+
+# @name get_standard_secret_details
+GET {{baseUrl}}/secrets/{{secret_for_standard_id}}
+Cookie: auth={{sign_in_auth}}
+
+###
+
+# @name get_configured_secret_details
+GET {{baseUrl}}/secrets/{{secret_for_configured_id}}
+Cookie: auth={{sign_in_auth}}
+
+### STEP 5: Read Token Generation and Verification
+
+@read_token_standard = {{generate_read_token_standard.response.body.readToken}}
+
+# @name generate_read_token_standard
+POST {{baseUrl}}/secrets/issue/read-token
+X-Secret: Comprehensive test secret for standard bucket access
+Content-Type: application/json
+
+{
+  "secret": "Comprehensive test secret for standard bucket access",
+  "bucketId": "{{standard_bucket_id}}",
+  "keys": ["comprehensive", "test", "standard"]
+}
+
+###
+
+@read_token_configured = {{generate_read_token_configured.response.body.readToken}}
+
+# @name generate_read_token_configured
+POST {{baseUrl}}/secrets/issue/read-token
+X-Secret: Comprehensive test secret for configured bucket access
+Content-Type: application/json
+
+{
+  "secret": "Comprehensive test secret for configured bucket access",
+  "bucketId": "{{configured_bucket_id}}",
+  "keys": ["comprehensive", "configured", "documentation"]
+}
+
+###
+
+# @name verify_standard_read_token
+POST {{baseUrl}}/secrets/verify-read-token
+Content-Type: application/json
+
+{
+  "readToken": "{{read_token_standard}}"
+}
+
+###
+
+# @name verify_configured_read_token
+POST {{baseUrl}}/secrets/verify-read-token
+Content-Type: application/json
+
+{
+  "readToken": "{{read_token_configured}}"
+}
+
+### STEP 6: Direct Asset Access via Read Tokens
+
+# @name access_standard_asset_via_read_token
+GET {{baseUrl}}/assets/{{asset_in_standard_bucket_id}}
+Cookie: read-token={{read_token_standard}}
+
+###
+
+# @name access_configured_asset_via_read_token
+GET {{baseUrl}}/assets/{{asset_in_configured_bucket_id}}
+Cookie: read-token={{read_token_configured}}
+
+### STEP 7: Signed URL Generation and Access
+
+@signed_url_standard = {{generate_signed_url_standard.response.body.signedUrl}}
+
+# @name generate_signed_url_standard
+POST {{baseUrl}}/assets/signed-url
+X-Secret: Comprehensive test secret for standard bucket access
+Content-Type: application/json
+
+{
+  "assetId": "{{asset_in_standard_bucket_id}}",
+  "expiresAt": "2025-12-31T23:59:59.000Z"
+}
+
+###
+
+@signed_url_configured = {{generate_signed_url_configured.response.body.signedUrl}}
+
+# @name generate_signed_url_configured
+POST {{baseUrl}}/assets/signed-url
+X-Secret: Comprehensive test secret for configured bucket access
+Content-Type: application/json
+
+{
+  "assetId": "{{asset_in_configured_bucket_id}}",
+  "expiresAt": "2025-12-31T23:59:59.000Z"
+}
+
+###
+
+# @name access_via_signed_url_standard
+GET {{baseUrl}}/assets/signed/{{signed_url_standard}}
+
+###
+
+# @name access_via_signed_url_configured
+GET {{baseUrl}}/assets/signed/{{signed_url_configured}}
+
+### STEP 8: Direct Asset Creation via Secret
+
+@direct_asset_id = {{create_direct_asset.response.body.id}}
+
+# @name create_direct_asset
+POST {{baseUrl}}/assets/
+X-Secret: Comprehensive test secret for standard bucket access
+Content-Type: multipart/form-data; boundary=WebAppBoundary
+
+--WebAppBoundary
+Content-Disposition: form-data; name="file"; filename="direct-comprehensive.txt"
+Content-Type: text/plain
+
+This file was created using the direct asset creation API
+via secret authentication. This tests the complete
+asset creation flow outside of the bucket interface.
+--WebAppBoundary
+Content-Disposition: form-data; name="bucketId"
+
+{{standard_bucket_id}}
+--WebAppBoundary
+Content-Disposition: form-data; name="keys"
+
+direct~comprehensive~secret~creation
+--WebAppBoundary--
+
+### STEP 9: Asset Download via Bucket Interface
+
+# @name download_standard_asset
+GET {{baseUrl}}/buckets/{{standard_bucket_id}}/assets/{{asset_in_standard_bucket_id}}/download
+Cookie: auth={{sign_in_auth}}
+
+###
+
+# @name download_configured_asset
+GET {{baseUrl}}/buckets/{{configured_bucket_id}}/assets/{{asset_in_configured_bucket_id}}/download
+Cookie: auth={{sign_in_auth}}
+
+### STEP 10: Asset Updates
+
+# @name update_standard_asset
+PATCH {{baseUrl}}/buckets/{{standard_bucket_id}}/assets/{{asset_in_standard_bucket_id}}
+Content-Type: application/json
+Cookie: auth={{sign_in_auth}}
+
+{
+  "name": "updated-comprehensive-test.txt"
+}
+
+###
+
+# @name update_configured_asset
+PATCH {{baseUrl}}/buckets/{{configured_bucket_id}}/assets/{{asset_in_configured_bucket_id}}
+Content-Type: application/json
+Cookie: auth={{sign_in_auth}}
+
+{
+  "name": "updated-comprehensive-configured.md"
+}
+
+### STEP 11: Bucket Updates
+
+# @name update_standard_bucket
+PUT {{baseUrl}}/buckets/{{standard_bucket_id}}
+Content-Type: application/json
+Cookie: auth={{sign_in_auth}}
+
+{
+  "name": "Updated Comprehensive Test Standard Bucket"
+}
+
+###
+
+# @name update_configured_bucket
+PUT {{baseUrl}}/buckets/{{configured_bucket_id}}
+Content-Type: application/json
+Cookie: auth={{sign_in_auth}}
+
+{
+  "name": "Updated Comprehensive Test Configured Bucket",
+  "config": {
+    "allowedFileTypes": [".txt", ".pdf", "image/*", ".md", ".json"],
+    "maxFileSize": 10485760
+  }
+}
+
+### STEP 12: Password Change Flow
+
+@password_change_auth = {{request_password_change.response.body.auth}}
+
+# @name request_password_change
+POST {{baseUrl}}/auth/password/change
+Content-Type: application/json
+
+{
+  "email": "comprehensive@example.com",
+  "newPassword": "newcomprehensive@example.com"
+}
+
+###
+
+# @name confirm_password_change
+POST {{baseUrl}}/auth/password/change/verify
+Content-Type: application/json
+
+{
+  "auth": "{{password_change_auth}}",
+  "code": "046071"
+}
+
+###
+
+# @name signin_with_new_password
+POST {{baseUrl}}/auth/sign-in
+Content-Type: application/json
+
+{
+  "email": "comprehensive@example.com",
+  "password": "newcomprehensive@example.com"
+}
+
+### STEP 13: Cleanup - Asset Deletion
+
+# @name delete_direct_asset
+DELETE {{baseUrl}}/assets/{{direct_asset_id}}
+X-Secret: Comprehensive test secret for standard bucket access
+Content-Type: application/json
+
+{
+  "bucketId": "{{standard_bucket_id}}"
+}
+
+###
+
+# @name delete_standard_asset
+DELETE {{baseUrl}}/buckets/{{standard_bucket_id}}/assets/{{asset_in_standard_bucket_id}}
+Cookie: auth={{sign_in_auth}}
+
+###
+
+# @name delete_configured_asset
+DELETE {{baseUrl}}/buckets/{{configured_bucket_id}}/assets/{{asset_in_configured_bucket_id}}
+Cookie: auth={{sign_in_auth}}
+
+### STEP 14: Cleanup - Secret Deletion
+
+# @name delete_standard_secret
+DELETE {{baseUrl}}/secrets/{{secret_for_standard_id}}
+Cookie: auth={{sign_in_auth}}
+
+###
+
+# @name delete_configured_secret
+DELETE {{baseUrl}}/secrets/{{secret_for_configured_id}}
+Cookie: auth={{sign_in_auth}}
+
+###
+
+# @name cleanup_expired_secrets
+DELETE {{baseUrl}}/secrets/expired/cleanup
+Cookie: auth={{sign_in_auth}}
+
+### STEP 15: Cleanup - Bucket Deletion
+
+# @name delete_standard_bucket
+DELETE {{baseUrl}}/buckets/{{standard_bucket_id}}
+Cookie: auth={{sign_in_auth}}
+
+###
+
+# @name delete_configured_bucket
+DELETE {{baseUrl}}/buckets/{{configured_bucket_id}}
+Cookie: auth={{sign_in_auth}}
+
+### STEP 16: Sign Out
+
+# @name user_signout
+POST {{baseUrl}}/auth/sign-out
+Cookie: auth={{sign_in_auth}}
+
+###
+
+# @name verify_signout_effect
+GET {{baseUrl}}/auth/me
+Cookie: auth={{sign_in_auth}}
+
+### END OF COMPREHENSIVE TEST

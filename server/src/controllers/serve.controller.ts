@@ -39,12 +39,16 @@ export class ServeController {
     if (!req._secret) throw new UnauthorizedError("Unauthorized access");
     if (!req.file) throw new BadRequestError("No file uploaded");
 
-    const validation = ServeCreateAssetSchema.safeParse(req.body);
+    const validation = ServeCreateAssetSchema.safeParse({
+      ...req.body,
+      bucketId: req.params.bucketId,
+    });
+
     if (!validation.success) throw new ZodValidationError(validation.error);
 
     const asset = await assetService.createAsset({
       file: req.file,
-      bucketId: req.body.bucketId,
+      bucketId: validation.data.bucketId,
       userId: req._secret.user.id,
       keys: validation.data.keys,
     });

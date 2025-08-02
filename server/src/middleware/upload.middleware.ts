@@ -1,17 +1,24 @@
 import { NextFunction, Response } from "express";
 import { BadRequestError, NotFoundError } from "~/lib/http";
 import { createBucketAwareUpload } from "~/lib/multer";
-import { AuthenticatedRequest } from "~/middleware/auth.middleware";
+import { SecretRequest } from "~/middleware/auth.middleware";
 import { bucketService } from "~/services/bucket.service";
 
-export async function bucketUploadMiddleware(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+type BucketRequest = SecretRequest & {
+  user?: { id: string };
+};
+
+export async function bucketUploadMiddleware(req: BucketRequest, res: Response, next: NextFunction) {
   try {
     const bucketId = req.params.bucketId;
     if (!bucketId) throw new BadRequestError("Bucket ID is required");
 
+    const user = req.user ?? req._secret?.user;
+    if (!user?.id) throw new BadRequestError("User not authenticated");
+
     const bucketConfig = await bucketService.getBucketConfig({
       id: bucketId,
-      userId: req.user!.id,
+      userId: user.id,
     });
 
     const uploadMiddleware = createBucketAwareUpload(bucketConfig);

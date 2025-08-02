@@ -1,0 +1,383 @@
+@baseUrl = http://localhost:8000/api/v1
+
+### ============ ERROR SCENARIOS AND BOUNDARY CONDITIONS ============
+
+### STEP 1: Setup for Error Testing
+
+@sign_in_auth = {{setup_signin.response.body.auth}}
+
+# @name setup_signin
+POST {{baseUrl}}/auth/sign-in
+Content-Type: application/json
+
+{
+  "email": "alimam@example.com",
+  "password": "alimam@example.com"
+}
+
+###
+
+@test_bucket_id = {{setup_bucket.response.body.id}}
+
+# @name setup_bucket
+POST {{baseUrl}}/buckets/
+Content-Type: application/json
+Cookie: auth={{sign_in_auth}}
+
+{
+  "name": "Error Testing Bucket"
+}
+
+### AUTHENTICATION ERROR SCENARIOS
+
+# @name auth_missing_token
+GET {{baseUrl}}/auth/me
+
+###
+
+# @name auth_invalid_token
+GET {{baseUrl}}/auth/me
+Cookie: auth=invalid.jwt.token.here
+
+###
+
+# @name auth_expired_token
+GET {{baseUrl}}/auth/me
+Cookie: auth=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c
+
+### VALIDATION ERROR SCENARIOS
+
+# @name bucket_invalid_json
+POST {{baseUrl}}/buckets/
+Content-Type: application/json
+Cookie: auth={{sign_in_auth}}
+
+{
+  "name": 123,
+  "config": "invalid_config"
+}
+
+###
+
+# @name asset_invalid_bucket_id
+POST {{baseUrl}}/buckets/invalid-bucket-id/assets/
+Cookie: auth={{sign_in_auth}}
+Content-Type: multipart/form-data; boundary=WebAppBoundary
+
+--WebAppBoundary
+Content-Disposition: form-data; name="file"; filename="test.txt"
+Content-Type: text/plain
+
+Test content
+--WebAppBoundary--
+
+###
+
+# @name secret_invalid_expiry_date
+POST {{baseUrl}}/secrets/
+Content-Type: application/json
+Cookie: auth={{sign_in_auth}}
+
+{
+  "secret": "Test secret",
+  "expiresAt": "not-a-date"
+}
+
+###
+
+# @name secret_empty_secret
+POST {{baseUrl}}/secrets/
+Content-Type: application/json
+Cookie: auth={{sign_in_auth}}
+
+{
+  "secret": "",
+  "expiresAt": "2025-12-31T23:59:59.000Z"
+}
+
+### PERMISSION ERROR SCENARIOS
+
+# Create another user to test cross-user access
+@other_user_auth = {{other_user_signup_verify.response.body.auth}}
+
+# @name other_user_signup
+POST {{baseUrl}}/auth/sign-up/
+Content-Type: application/json
+
+{
+  "email": "otheruser@example.com",
+  "password": "otheruser@example.com",
+  "name": "Other Test User"
+}
+
+###
+
+# @name other_user_signup_verify
+POST {{baseUrl}}/auth/sign-up/verify
+Content-Type: application/json
+
+{
+  "auth": "{{other_user_signup.response.body.auth}}",
+  "code": "046071"
+}
+
+###
+
+# @name other_user_signin
+POST {{baseUrl}}/auth/sign-in
+Content-Type: application/json
+
+{
+  "email": "otheruser@example.com",
+  "password": "otheruser@example.com"
+}
+
+###
+
+# @name cross_user_bucket_access
+GET {{baseUrl}}/buckets/{{test_bucket_id}}
+Cookie: auth={{other_user_auth}}
+
+###
+
+@test_asset_id = {{setup_asset.response.body.id}}
+
+# @name setup_asset
+POST {{baseUrl}}/buckets/{{test_bucket_id}}/assets/
+Cookie: auth={{sign_in_auth}}
+Content-Type: multipart/form-data; boundary=WebAppBoundary
+
+--WebAppBoundary
+Content-Disposition: form-data; name="file"; filename="cross-user-test.txt"
+Content-Type: text/plain
+
+This file tests cross-user access permissions
+--WebAppBoundary
+Content-Disposition: form-data; name="keys"
+
+cross~user~test
+--WebAppBoundary--
+
+###
+
+# @name cross_user_asset_access
+GET {{baseUrl}}/buckets/{{test_bucket_id}}/assets/{{test_asset_id}}
+Cookie: auth={{other_user_auth}}
+
+###
+
+# @name cross_user_asset_download
+GET {{baseUrl}}/buckets/{{test_bucket_id}}/assets/{{test_asset_id}}/download
+Cookie: auth={{other_user_auth}}
+
+###
+
+@test_secret_id = {{setup_secret.response.body.id}}
+
+# @name setup_secret
+POST {{baseUrl}}/secrets/
+Content-Type: application/json
+Cookie: auth={{sign_in_auth}}
+
+{
+  "secret": "Cross user access test secret",
+  "expiresAt": "2025-12-31T23:59:59.000Z"
+}
+
+###
+
+# @name cross_user_secret_access
+GET {{baseUrl}}/secrets/{{test_secret_id}}
+Cookie: auth={{other_user_auth}}
+
+### BOUNDARY CONDITIONS
+
+# @name large_pagination_cursor
+GET {{baseUrl}}/buckets/{{test_bucket_id}}/assets/?cursor=999999&limit=100
+Cookie: auth={{sign_in_auth}}
+
+###
+
+# @name zero_pagination_limit
+GET {{baseUrl}}/buckets/{{test_bucket_id}}/assets/?cursor=1&limit=0
+Cookie: auth={{sign_in_auth}}
+
+###
+
+# @name negative_pagination_cursor
+GET {{baseUrl}}/buckets/{{test_bucket_id}}/assets/?cursor=-1&limit=10
+Cookie: auth={{sign_in_auth}}
+
+###
+
+# @name exceeding_pagination_limit
+GET {{baseUrl}}/buckets/{{test_bucket_id}}/assets/?cursor=1&limit=1000
+Cookie: auth={{sign_in_auth}}
+
+### MALFORMED REQUEST SCENARIOS
+
+# @name malformed_json_bucket
+POST {{baseUrl}}/buckets/
+Content-Type: application/json
+Cookie: auth={{sign_in_auth}}
+
+{
+  "name": "Test Bucket",
+  "config": {
+    "allowedFileTypes": [".txt"
+    "maxFileSize": 1024
+  }
+}
+
+###
+
+# @name missing_content_type
+POST {{baseUrl}}/buckets/
+Cookie: auth={{sign_in_auth}}
+
+{
+  "name": "Test Bucket"
+}
+
+###
+
+# @name wrong_content_type
+POST {{baseUrl}}/buckets/
+Content-Type: text/plain
+Cookie: auth={{sign_in_auth}}
+
+{
+  "name": "Test Bucket"
+}
+
+### FILE UPLOAD EDGE CASES
+
+# @name upload_empty_file
+POST {{baseUrl}}/buckets/{{test_bucket_id}}/assets/
+Cookie: auth={{sign_in_auth}}
+Content-Type: multipart/form-data; boundary=WebAppBoundary
+
+--WebAppBoundary
+Content-Disposition: form-data; name="file"; filename="empty.txt"
+Content-Type: text/plain
+
+
+--WebAppBoundary
+Content-Disposition: form-data; name="keys"
+
+empty~file~test
+--WebAppBoundary--
+
+###
+
+# @name upload_file_no_filename
+POST {{baseUrl}}/buckets/{{test_bucket_id}}/assets/
+Cookie: auth={{sign_in_auth}}
+Content-Type: multipart/form-data; boundary=WebAppBoundary
+
+--WebAppBoundary
+Content-Disposition: form-data; name="file"
+Content-Type: text/plain
+
+File without filename
+--WebAppBoundary
+Content-Disposition: form-data; name="keys"
+
+no~filename~test
+--WebAppBoundary--
+
+###
+
+# @name upload_with_special_characters
+POST {{baseUrl}}/buckets/{{test_bucket_id}}/assets/
+Cookie: auth={{sign_in_auth}}
+Content-Type: multipart/form-data; boundary=WebAppBoundary
+
+--WebAppBoundary
+Content-Disposition: form-data; name="file"; filename="test-file-with-special-chars-@#$%^&()+=[]{}|;':\",./<>?.txt"
+Content-Type: text/plain
+
+File with special characters in name
+--WebAppBoundary
+Content-Disposition: form-data; name="keys"
+
+special~characters~test
+--WebAppBoundary--
+
+### READ TOKEN EDGE CASES
+
+# @name read_token_empty_keys_array
+POST {{baseUrl}}/secrets/issue/read-token
+X-Secret: Cross user access test secret
+Content-Type: application/json
+
+{
+  "secret": "Cross user access test secret",
+  "bucketId": "{{test_bucket_id}}",
+  "keys": []
+}
+
+###
+
+# @name read_token_null_keys
+POST {{baseUrl}}/secrets/issue/read-token
+X-Secret: Cross user access test secret
+Content-Type: application/json
+
+{
+  "secret": "Cross user access test secret",
+  "bucketId": "{{test_bucket_id}}",
+  "keys": null
+}
+
+###
+
+# @name read_token_very_long_key
+POST {{baseUrl}}/secrets/issue/read-token
+X-Secret: Cross user access test secret
+Content-Type: application/json
+
+{
+  "secret": "Cross user access test secret",
+  "bucketId": "{{test_bucket_id}}",
+  "keys": ["this-is-a-very-long-key-name-that-might-cause-issues-with-processing-or-storage-limitations-testing-boundary-conditions-for-key-length-handling"]
+}
+
+### RATE LIMITING AND CONCURRENT ACCESS
+# These would test rate limiting if implemented
+
+# @name multiple_rapid_requests_1
+GET {{baseUrl}}/buckets/{{test_bucket_id}}
+Cookie: auth={{sign_in_auth}}
+
+###
+
+# @name multiple_rapid_requests_2
+GET {{baseUrl}}/buckets/{{test_bucket_id}}
+Cookie: auth={{sign_in_auth}}
+
+###
+
+# @name multiple_rapid_requests_3
+GET {{baseUrl}}/buckets/{{test_bucket_id}}
+Cookie: auth={{sign_in_auth}}
+
+### CLEANUP
+
+# @name cleanup_test_asset
+DELETE {{baseUrl}}/buckets/{{test_bucket_id}}/assets/{{test_asset_id}}
+Cookie: auth={{sign_in_auth}}
+
+###
+
+# @name cleanup_test_secret
+DELETE {{baseUrl}}/secrets/{{test_secret_id}}
+Cookie: auth={{sign_in_auth}}
+
+###
+
+# @name cleanup_test_bucket
+DELETE {{baseUrl}}/buckets/{{test_bucket_id}}
+Cookie: auth={{sign_in_auth}}
+
+### END OF ERROR TESTING
