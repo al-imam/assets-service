@@ -1,1 +1,1 @@
-![Access Flow](server/public/access-flow.png)
+![Access Flow Whiteboard](server/public/access-flow.png)
