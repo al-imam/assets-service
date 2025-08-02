@@ -2,8 +2,11 @@ import { writeFileSync } from "fs";
 import path from "path";
 import { z } from "zod";
 import { db } from "~/db";
-import { NotFoundError } from "~/lib/http";
+import { env } from "~/env";
+import { NotFoundError, UnauthorizedError } from "~/lib/http";
+import { safeDecode, safeVerify, sign } from "~/lib/jwt";
 import { ensureStorageDirectory, generateStoragePath, getFullFilePath } from "~/lib/multer";
+import { decrypt, encrypt } from "~/lib/secret";
 import { ulid } from "~/lib/uuid";
 import { deleteFile, sanitizeFilename } from "~/utils/file";
 
@@ -15,6 +18,23 @@ export const AssetPaginationSchema = z.object({
 export const UpdateAssetSchema = z.object({
   name: z.string().min(1, "Asset name is required").max(255, "Asset name must be less than 255 characters"),
 });
+
+export const GenerateSignedUrlSchema = z.object({
+  assetId: z.string().min(1, "Asset ID is required"),
+  bucketId: z.string().min(1, "Bucket ID is required"),
+  secret: z.string().min(1, "Secret is required"),
+  expireInMinutes: z.number().int().min(1).max(1440).default(60),
+});
+
+export const SignedUrlPayloadSchema = z.object({ assetId: z.string(), secretId: z.string() });
+
+export const EncryptedSignedUrlSchema = z.preprocess(data => {
+  if (typeof data === "string") {
+    return JSON.parse(decrypt(data, env.MASTER_SECRET_KEY));
+  }
+
+  return data;
+}, SignedUrlPayloadSchema);
 
 export const PublicAsset = z.object({
   id: z.string(),
@@ -193,6 +213,75 @@ class AssetService {
 
     const deletedAsset = await db.asset.delete({ where: { id } });
     return PublicAsset.parse(deletedAsset);
+  }
+
+  async generateSignedUrl({
+    assetId,
+    bucketId,
+    secret: inputSecret,
+    expireInMinutes = 60,
+  }: z.infer<typeof GenerateSignedUrlSchema>) {
+    const secret = await db.secret.findFirst({
+      where: { secret: encrypt(inputSecret) },
+      include: { user: true },
+    });
+
+    if (!secret) throw new NotFoundError("Invalid secret");
+    if (secret.expiresAt && secret.expiresAt < new Date()) {
+      throw new UnauthorizedError("Secret has expired");
+    }
+
+    const bucket = await db.bucket.findFirst({ where: { id: bucketId, userId: secret.userId } });
+    if (!bucket) throw new NotFoundError("Bucket not found or access denied");
+    const asset = await db.asset.findFirst({ where: { id: assetId, bucketId } });
+    if (!asset) throw new NotFoundError("Asset not found in the specified bucket");
+
+    const expiresAt = new Date(Date.now() + expireInMinutes * 60 * 1000);
+    const encryptedPayload = encrypt(JSON.stringify({ assetId, secretId: secret.id }), env.MASTER_SECRET_KEY);
+
+    const signedToken = await sign(encryptedPayload, {
+      expiresIn: `${expireInMinutes}m`,
+      secret: decrypt(secret.secret, env.MASTER_SECRET_KEY),
+    });
+
+    return {
+      signedUrl: `/signed/${signedToken}`,
+      expiresAt: expiresAt.toISOString(),
+      asset: PublicAsset.parse(asset),
+    };
+  }
+
+  async verifySignedUrl(token: string) {
+    const [payload, decodeError] = safeDecode<string>(token);
+    if (decodeError) throw new UnauthorizedError("Invalid or expired signed URL");
+
+    const validation = EncryptedSignedUrlSchema.safeParse(payload);
+    if (!validation.success) throw new UnauthorizedError("Invalid signed URL payload");
+
+    const secretRecord = await db.secret.findFirst({
+      where: { id: validation.data.secretId },
+      include: { user: true },
+    });
+
+    if (!secretRecord) throw new NotFoundError("Secret not found or has been revoked");
+    if (secretRecord.expiresAt && secretRecord.expiresAt < new Date()) {
+      throw new UnauthorizedError("Secret has expired");
+    }
+
+    const [, verifyError] = await safeVerify<string>(token, {
+      secret: decrypt(secretRecord.secret),
+    });
+
+    if (verifyError) throw new UnauthorizedError("Invalid signed URL signature");
+
+    const asset = await db.asset.findFirst({
+      where: { id: validation.data.assetId },
+      include: { bucket: true },
+    });
+
+    if (!asset) throw new NotFoundError("Asset not found or has been deleted");
+
+    return AssetWithBucket.parse(asset);
   }
 }
 
