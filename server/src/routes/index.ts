@@ -10,5 +10,5 @@ combinedRouter.use("/auth", authRouter);
 combinedRouter.use("/buckets", bucketRouter);
 combinedRouter.use("/secrets", secretRouter);
 
-combinedRouter.get("/signed/:signedUrl", serveController.accessViaSignedUrl.bind(serveController));
-combinedRouter.post("/signed/issue", serveController.generateSignedUrl.bind(serveController));
+combinedRouter.get("/assets/signed/:signedUrl", serveController.accessViaSignedUrl.bind(serveController));
+combinedRouter.post("/assets/signed-url", serveController.generateSignedUrl.bind(serveController));

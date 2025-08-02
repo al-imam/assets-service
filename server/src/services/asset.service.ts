@@ -245,7 +245,7 @@ class AssetService {
     });
 
     return {
-      signedUrl: `/signed/${signedToken}`,
+      signedUrl: `/assets/signed/${signedToken}`,
       expiresAt: expiresAt.toISOString(),
       asset: PublicAsset.parse(asset),
     };
