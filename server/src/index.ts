@@ -16,6 +16,7 @@ app.use(cors());
 app.use(express.json());
 app.use(cookies());
 app.use(express.urlencoded({ extended: true }));
+app.use(express.static(join(__dirname, "../public")));
 app.use(cleanBodyMiddleware);
 app.use("/api/v1", combinedRouter);
 app.use(ErrorHandler);

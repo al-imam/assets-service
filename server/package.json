@@ -12,7 +12,7 @@
     "lint": "tsc --noEmit && eslint . --ext .js,.ts",
     "lint:fix": "eslint . --ext .js,.ts --fix",
     "format": "prettier --write .",
-    "prepare": "cd .. && husky",
+    "prepare": "cd .. && husky ./server/.husky",
     "commit": "git-cz",
     "db:prisma": "prisma generate && prisma db push"
   },
@@ -70,7 +70,10 @@
   },
   "pnpm": {
     "onlyBuiltDependencies": [
-      "esbuild"
+      "@prisma/client",
+      "@prisma/engines",
+      "esbuild",
+      "prisma"
     ]
   }
 }
