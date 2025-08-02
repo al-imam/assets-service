@@ -5,7 +5,7 @@ import { db } from "~/db";
 import { env } from "~/env";
 import { NotFoundError, UnauthorizedError } from "~/lib/http";
 import { safeDecode, safeVerify, sign } from "~/lib/jwt";
-import { ensureStorageDirectory, generateStoragePath, getFullFilePath } from "~/lib/multer";
+import { ensureStorageDirectory, generateStoragePath, getFullFilePath, hasFile } from "~/lib/multer";
 import { decrypt, encrypt } from "~/lib/secret";
 import { ulid } from "~/lib/uuid";
 import { deleteFile, sanitizeFilename } from "~/utils/file";
@@ -209,7 +209,7 @@ class AssetService {
     if (!asset) throw new NotFoundError("Asset not found or you don't have permission to access it");
 
     const fullFilePath = getFullFilePath(asset.ref);
-    deleteFile(fullFilePath);
+    if (hasFile(fullFilePath)) deleteFile(fullFilePath);
 
     const deletedAsset = await db.asset.delete({ where: { id } });
     return PublicAsset.parse(deletedAsset);

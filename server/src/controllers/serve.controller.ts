@@ -4,11 +4,11 @@ import path from "path";
 import z from "zod";
 import { db } from "~/db";
 import { BadRequestError, NotFoundError, UnauthorizedError, ZodValidationError } from "~/lib/http";
-import { getFullFilePath } from "~/lib/multer";
+import { getFullFilePath, hasFile } from "~/lib/multer";
 import { getSecret, SecretRequest } from "~/middleware/auth.middleware";
 import { assetService, GenerateSignedUrlSchema } from "~/services/asset.service";
 import { secretService } from "~/services/secret.service";
-import { removeExtension } from "~/utils/file";
+import { deleteFile, removeExtension } from "~/utils/file";
 
 const ServeCreateAssetSchema = z.object({
   bucketId: z.ulid().min(1, "Bucket ID is required"),
@@ -32,7 +32,7 @@ export class ServeController {
 
     res.setHeader("Content-Disposition", `inline; filename="${asset.name}"`);
     res.setHeader("Cache-Control", "private, max-age=3600");
-    res.sendFile(fullFilePath);
+    createReadStream(fullFilePath).pipe(res);
   }
 
   async createAsset(req: SecretRequest, res: Response) {
@@ -51,6 +51,24 @@ export class ServeController {
 
     asset.id = asset.id + path.extname(asset.ref);
     res.status(201).json(asset);
+  }
+
+  async deleteAsset(req: SecretRequest, res: Response) {
+    if (!req._secret) throw new UnauthorizedError("Unauthorized access");
+
+    const assetId = removeExtension(req.params.assetId);
+    const bucketId = req.body.bucketId;
+
+    const asset = await db.asset.findFirst({
+      where: { id: assetId, bucket: { userId: req._secret.user.id, ...(bucketId ? { id: bucketId } : {}) } },
+    });
+
+    if (!asset) throw new NotFoundError("Asset not found");
+    const fullFilePath = getFullFilePath(asset.ref);
+
+    if (hasFile(fullFilePath)) deleteFile(fullFilePath);
+    const deletedAsset = await db.asset.delete({ where: { id: assetId } });
+    res.status(204).json(deletedAsset);
   }
 
   async accessorViaReadToken(req: Request, res: Response) {

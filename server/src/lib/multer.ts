@@ -1,3 +1,4 @@
+import { existsSync } from "fs";
 import multer from "multer";
 import path from "path";
 import z from "zod";
@@ -75,4 +76,12 @@ export function getFullFilePath(relativePath: string): string {
 export function ensureStorageDirectory(userId: string, bucketId: string): string {
   const dirPath = path.posix.join(env.STORAGE_DIRECTORY, userId, bucketId);
   return ensureFilePathExists(dirPath);
+}
+
+export function hasFile(path: string): boolean {
+  try {
+    return existsSync(path);
+  } catch {
+    return false;
+  }
 }
