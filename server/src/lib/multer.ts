@@ -60,11 +60,11 @@ export function createBucketAwareUpload(bucketConfig: z.infer<typeof BucketConfi
 export function generateStoragePath(
   userId: string,
   bucketId: string,
-  keys: string[],
+  keys: string[] | null,
   assetId: string,
   ext: string
 ): string {
-  const filename = [...keys, assetId].join("~") + ext;
+  const filename = [...(keys ?? []), assetId].join("~") + ext;
   return path.posix.join(userId, bucketId, filename);
 }
 

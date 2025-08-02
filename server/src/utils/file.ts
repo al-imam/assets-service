@@ -32,3 +32,7 @@ export function deleteFile(filePath: string): boolean {
     return false;
   }
 }
+
+export function removeExtension(filename: string): string {
+  return filename.replace(/\.[^/.]+$/, "");
+}

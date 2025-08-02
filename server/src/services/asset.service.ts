@@ -83,7 +83,7 @@ class AssetService {
     file: Express.Multer.File;
     bucketId: string;
     userId: string;
-    keys: string[];
+    keys: string[] | null;
   }) {
     const bucket = await db.bucket.findFirst({ where: { id: bucketId, userId } });
     if (!bucket) throw new NotFoundError("Bucket not found or you don't have permission to access it");
@@ -103,7 +103,7 @@ class AssetService {
           id: assetId,
           name: sanitizedName,
           size: sizeInKB,
-          keys: keys.join("~"),
+          keys: keys ? keys.join("~") : null,
           ref: relativePath,
           bucketId,
         },

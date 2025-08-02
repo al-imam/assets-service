@@ -6,7 +6,7 @@ import { secretService } from "~/services/secret.service";
 
 const jwtSchema = z.jwt();
 
-function getAuth(req: Request): string | null {
+export function getAuth(req: Request): string | null {
   const authHeader = req.headers.authorization;
 
   if (authHeader && authHeader.startsWith("Bearer ")) {
@@ -42,7 +42,7 @@ export type SecretRequest = Request & {
   _secret?: Awaited<ReturnType<typeof secretService.verifySecret>> | null;
 };
 
-function getSecret(req: Request): string | null {
+export function getSecret(req: Request): string | null {
   const secretHeader = req.headers["x-secret"];
 
   if (typeof secretHeader === "string") return secretHeader;
