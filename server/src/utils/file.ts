@@ -9,9 +9,9 @@ export function ensureFilePathExists(dir: string) {
 export function sanitizeFilename(filename: string): string {
   return filename
     .toLowerCase()
-    .replace(/[^a-z0-9\-_.]|(?=\..*\.)/gi, "_")
-    .replace(/_{2,}/g, "_")
-    .replace(/^_|_$/g, "")
+    .replace(/[^a-zA-Z0-9\-_.\s]+/g, "")
+    .replace(/[-_\s]+/g, "-")
+    .replace(/\.(?=.*\.)/g, "-")
     .slice(0, 100);
 }
 
