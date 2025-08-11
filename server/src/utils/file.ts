@@ -20,6 +20,18 @@ export function sanitizeFilename(filename: string): string {
   return `${sanitized}${ext.toLowerCase()}`;
 }
 
+export function toKebabCaseBaseName(filename: string): string {
+  const extension = extname(filename);
+  const nameWithoutExt = extension ? filename.slice(0, -extension.length) : filename;
+
+  return nameWithoutExt
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .replace(/-{2,}/g, "-")
+    .slice(0, 100);
+}
+
 export function deleteFile(filePath: string): boolean {
   try {
     if (existsSync(filePath)) {
@@ -35,4 +47,8 @@ export function deleteFile(filePath: string): boolean {
 
 export function removeExtension(filename: string): string {
   return filename.replace(/\.[^/.]+$/, "");
+}
+
+export function fileExists(filePath: string): boolean {
+  return existsSync(filePath);
 }
