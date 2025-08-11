@@ -5,17 +5,15 @@ import { join } from "path";
 import { env } from "~/env";
 import { ErrorHandler } from "~/lib/http";
 import { cleanBodyMiddleware } from "~/middleware/clean.middleware";
-import { startImageWorkers } from "~/queue/image.queue";
+import { startImageWorkers } from "~/queue/media.queue";
 import { combinedRouter } from "~/routes";
 import { ensureFilePathExists } from "~/utils/file";
 
 const app = express();
 
 ensureFilePathExists(join(env.STORAGE_DIRECTORY));
-ensureFilePathExists(join(env.STORAGE_DIRECTORY, "originals"));
 ensureFilePathExists(join(env.TMP_DIRECTORY));
 
-// Start BullMQ workers for image processing
 startImageWorkers();
 
 app.use(cors());

@@ -2,8 +2,6 @@ import sharp, { Sharp } from "sharp";
 import { z } from "zod";
 import { env } from "~/env";
 
-sharp.cache(false); // honor "no caching for now"
-
 export type OutputFormat = "jpeg" | "png" | "webp" | "avif";
 
 export const TransformQuerySchema = z
@@ -38,10 +36,6 @@ export function normalizeFormatFromSharp(format: string | undefined): OutputForm
   }
 }
 
-export function normalizeExtension(format: OutputFormat): string {
-  return format === "jpeg" ? ".jpg" : `.${format}`;
-}
-
 export function encodeImageByFormat(instance: Sharp, format: OutputFormat, quality?: number) {
   switch (format) {
     case "jpeg":
@@ -66,18 +60,16 @@ export interface PluginContext {
 
 export type ImagePlugin = (ctx: PluginContext) => void | Promise<void>;
 
-// Plugins (ordered)
 export const autoRotatePlugin: ImagePlugin = ({ sharpInstance }) => {
   sharpInstance.rotate();
 };
 
 export const resizePlugin: ImagePlugin = ({ sharpInstance, options }) => {
-  const { width, height, fit } = options;
-  if (width || height) {
+  if (options.width || options.height) {
     sharpInstance.resize({
-      width,
-      height,
-      fit: fit ?? "cover",
+      width: options.width,
+      height: options.height,
+      fit: options.fit ?? "cover",
       withoutEnlargement: true,
       background: { r: 255, g: 255, b: 255, alpha: 0 },
     });
@@ -95,20 +87,15 @@ export async function buildPipeline(
   phase: PipelinePhase
 ): Promise<Sharp> {
   const sharpInstance = sharp(inputFilePath, { failOnError: true });
-  const context: PluginContext = { phase, sharpInstance, options, outputFormat };
+  const context = { phase, sharpInstance, options, outputFormat };
 
-  const plugins: ImagePlugin[] =
-    phase === "ingest"
-      ? [autoRotatePlugin, encodePlugin] // keep ingest fast and deterministic
-      : [autoRotatePlugin, resizePlugin, encodePlugin]; // allow size/quality transforms
+  const plugins =
+    phase === "ingest" ? [autoRotatePlugin, encodePlugin] : [autoRotatePlugin, resizePlugin, encodePlugin];
 
-  for (const plugin of plugins) {
-    await plugin(context);
-  }
+  for (const plugin of plugins) await plugin(context);
   return context.sharpInstance;
 }
 
-// Size targeting with binary search on quality (lossy formats). Returns buffer and the quality used.
 export async function encodeToTargetKilobytes(
   createSharp: () => Promise<Sharp>,
   format: OutputFormat,

@@ -141,4 +141,4 @@ yarn.lock
 *.sqlite-shm
 *.sqlite
 
-STORAGE
+secure-storage

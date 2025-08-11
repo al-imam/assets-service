@@ -1,5 +1,5 @@
 import { existsSync, mkdirSync, unlinkSync } from "fs";
-import { extname, normalize } from "path";
+import { normalize } from "path";
 
 export function ensureFilePathExists(dir: string) {
   if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
@@ -7,29 +7,16 @@ export function ensureFilePathExists(dir: string) {
 }
 
 export function sanitizeFilename(filename: string): string {
-  const ext = extname(filename);
-  const nameWithoutExt = filename.slice(0, -ext.length);
-
-  const sanitized = nameWithoutExt
+  return filename
     .toLowerCase()
-    .replace(/[^a-z0-9\-_.]/g, "_")
+    .replace(/[^a-z0-9\-_.]|(?=\..*\.)/gi, "_")
     .replace(/_{2,}/g, "_")
     .replace(/^_|_$/g, "")
     .slice(0, 100);
-
-  return `${sanitized}${ext.toLowerCase()}`;
 }
 
-export function toKebabCaseBaseName(filename: string): string {
-  const extension = extname(filename);
-  const nameWithoutExt = extension ? filename.slice(0, -extension.length) : filename;
-
-  return nameWithoutExt
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .replace(/-{2,}/g, "-")
-    .slice(0, 100);
+export function getFilename(filePath: string): string {
+  return filePath.split("/").at(-1)!;
 }
 
 export function deleteFile(filePath: string): boolean {
@@ -38,17 +25,9 @@ export function deleteFile(filePath: string): boolean {
       unlinkSync(filePath);
       return true;
     }
+
     return false;
-  } catch (error) {
-    console.error(`Failed to delete file ${filePath}:`, error);
+  } catch {
     return false;
   }
-}
-
-export function removeExtension(filename: string): string {
-  return filename.replace(/\.[^/.]+$/, "");
-}
-
-export function fileExists(filePath: string): boolean {
-  return existsSync(filePath);
 }

@@ -25,4 +25,4 @@ export const uploadSingleImage = multer({
       callback(new Error("Unsupported image type (jpeg, png, webp, avif only)"));
     }
   },
-}).single("file");
+});
