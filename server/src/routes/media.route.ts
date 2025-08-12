@@ -17,57 +17,61 @@ import { deleteFile, getFilename } from "~/utils/file";
 export const mediaRouter = Router();
 
 mediaRouter.post("/", uploadSingleImage.single("file"), async (req, res) => {
-  if (!req.file) throw new BadRequestError("No file uploaded; use field name 'file'.");
+  if (!req.file) throw new BadRequestError("File not provided");
+  if (!req.file.path || !req.file.originalname) throw new BadRequestError("Invalid file");
 
-  const result = await enqueueIngest({
-    tmpFilePath: req.file.path,
-    originalFileName: req.file.originalname || "image",
-  });
+  const result = await enqueueIngest({ filePath: req.file.path, fileName: req.file.originalname });
 
-  res.status(201).json({ key: result.key, path: `/m/${result.key}` });
+  res.status(201).json({ key: result.key, url: `m/${result.key}` });
 });
 
 mediaRouter.delete("/:hash/:filename", async (req, res) => {
-  const key = `${req.params.hash}/${req.params.filename}`;
-  if (!key) throw new NotFoundError("Image not found");
+  const hash = req.params.hash;
+  if (!hash) throw new NotFoundError("Image not found");
+  const record = await db.image.findFirst({ where: { key: { startsWith: hash + "/" } } });
+  if (!record) throw new NotFoundError("Image not found");
 
-  const existing = await db.image.findUnique({ where: { key } });
-  if (!existing) throw new NotFoundError("Image not found");
+  const [dbHash, dbFilename] = record.key.split("/");
+  const absolutePath = join(env.STORAGE_DIRECTORY, `${dbHash}.${dbFilename}`);
 
-  deleteFile(join(env.STORAGE_DIRECTORY, key));
-  await db.image.delete({ where: { key } });
+  deleteFile(absolutePath);
+  await db.image.delete({ where: { key: record.key } });
 
   res.status(204).end();
 });
 
 mediaRouter.get("/:hash/:filename", async (req, res, next) => {
-  const key = `${req.params.hash}/${req.params.filename}`;
-  if (!key) throw new NotFoundError("Image not found");
+  const hash = req.params.hash;
+  if (!hash) throw new NotFoundError("Image not found");
 
-  const record = await db.image.findUnique({ where: { key } });
+  const record = await db.image.findFirst({ where: { key: { startsWith: hash + "/" } } });
   if (!record) throw new NotFoundError("Image not found");
 
   const result = TransformQuerySchema.safeParse(req.query);
   if (!result.success) throw new ZodValidationError(result.error);
   const query = result.data;
 
-  const sourceFormat = normalizeFormatFromSharp(extname(key).replace(".", ""));
+  const [dbHash, dbFilename] = record.key.split("/");
+  const absolutePath = join(env.STORAGE_DIRECTORY, `${dbHash}.${dbFilename}`);
+
+  const sourceFormat = normalizeFormatFromSharp(extname(record.key).replace(".", ""));
   const outputFormat = query.format && query.format !== "auto" ? (query.format as OutputFormat) : sourceFormat;
 
-  const createSharp = async () => await buildPipeline(join(env.STORAGE_DIRECTORY, key), query, outputFormat, "serve");
+  const createSharp = async () => await buildPipeline(absolutePath, query, outputFormat, "serve");
 
-  if (query.maxKilobytes) {
+  if (query.kb) {
     const { buffer, format, qualityUsed } = await encodeToTargetKilobytes(
       createSharp,
       outputFormat,
-      query.maxKilobytes,
+      query.kb,
       query.quality
     );
 
     res.setHeader("Content-Type", `image/${format}`);
     res.setHeader("Cache-Control", "no-store");
     res.setHeader("X-Quality", String(qualityUsed));
-    res.setHeader("Content-Disposition", `inline; filename="${getFilename(key)}"`);
+    res.setHeader("Content-Disposition", `inline; filename="${getFilename(record.key)}"`);
+
     return res.end(buffer);
   }
 
@@ -76,7 +80,7 @@ mediaRouter.get("/:hash/:filename", async (req, res, next) => {
   res.setHeader("Content-Type", `image/${outputFormat}`);
   res.setHeader("Cache-Control", "no-store");
   res.setHeader("X-Content-Type-Options", "nosniff");
-  res.setHeader("Content-Disposition", `inline; filename="${getFilename(key)}"`);
+  res.setHeader("Content-Disposition", `inline; filename="${getFilename(record.key)}"`);
 
   const stream = sharpInstance.on("error", next);
   stream.pipe(res);

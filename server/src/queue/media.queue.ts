@@ -1,22 +1,20 @@
 import { JobsOptions, Queue, QueueEvents, Worker } from "bullmq";
 import { existsSync, renameSync } from "fs";
 import IORedis from "ioredis";
-import { dirname, join } from "path";
+import { join } from "path";
 import sharp from "sharp";
 import { db } from "~/db";
 import { env } from "~/env";
 import { buildPipeline, normalizeFormatFromSharp } from "~/image/pipeline";
-import { deleteFile, ensureFilePathExists, sanitizeFilename } from "~/utils/file";
+import { deleteFile, sanitizeFilename } from "~/utils/file";
 import { sha256File } from "~/utils/hash";
 
 export type IngestJobData = {
-  tmpFilePath: string;
-  originalFileName: string;
+  filePath: string;
+  fileName: string;
 };
 
-export type IngestJobResult = {
-  key: string;
-};
+export type IngestJobResult = { key: string };
 
 const redis = new IORedis(env.REDIS_URL, {
   maxRetriesPerRequest: null,
@@ -28,21 +26,20 @@ export function startImageWorkers() {
   new Worker<IngestJobData>(
     "image-ingest",
     async job => {
-      const metadata = await sharp(job.data.tmpFilePath, { failOnError: true }).metadata();
+      const metadata = await sharp(job.data.filePath, { failOnError: true }).metadata();
       const sourceFormat = normalizeFormatFromSharp(metadata.format);
 
-      const pipeline = await buildPipeline(job.data.tmpFilePath, { fit: "cover" }, sourceFormat, "ingest");
+      const pipeline = await buildPipeline(job.data.filePath, { fit: "cover" }, sourceFormat, "ingest");
 
-      const tempMasterPath = `${job.data.tmpFilePath}.master`;
+      const tempMasterPath = `${job.data.filePath}.master`;
       await pipeline.toFile(tempMasterPath);
 
       const contentHash = await sha256File(tempMasterPath);
 
-      const kebabBase = sanitizeFilename(job.data.originalFileName);
+      const kebabBase = sanitizeFilename(job.data.fileName);
       const relativeKey = `${contentHash}/${kebabBase}`;
-      const finalAbsolutePath = join(env.STORAGE_DIRECTORY, relativeKey);
 
-      ensureFilePathExists(dirname(finalAbsolutePath));
+      const finalAbsolutePath = join(env.STORAGE_DIRECTORY, `${contentHash}.${kebabBase}`);
 
       if (!existsSync(finalAbsolutePath)) {
         renameSync(tempMasterPath, finalAbsolutePath);
@@ -56,7 +53,7 @@ export function startImageWorkers() {
         /**/
       }
 
-      deleteFile(job.data.tmpFilePath);
+      deleteFile(job.data.filePath);
 
       return { key: relativeKey };
     },

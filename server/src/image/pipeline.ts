@@ -11,7 +11,7 @@ export const TransformQuerySchema = z
     fit: z.enum(["cover", "contain", "fill", "inside", "outside"]).default("cover"),
     quality: z.coerce.number().int().min(1).max(100).optional(),
     format: z.enum(["jpeg", "png", "webp", "avif", "auto"]).optional(),
-    maxKilobytes: z.coerce.number().int().min(1).max(50000).optional(),
+    kb: z.coerce.number().int().min(1).max(50000).optional(),
   })
   .refine(obj => (obj.width || obj.height ? (obj.width ?? 0) * (obj.height ?? 0) <= env.MAX_PIXEL_COUNT : true), {
     message: "Requested pixel count too large",

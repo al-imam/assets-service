@@ -1,8 +1,10 @@
-@host = http://localhost:8000/api/v1/m
+@host = http://localhost:8000/api/v1
 
 ###
+
+
 # @name media
-POST {{host}}/
+POST {{host}}/m
 Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
 
 ------WebKitFormBoundary7MA4YWxkTrZu0gW
@@ -12,31 +14,19 @@ Content-Type: image/png
 < ../public/access-flow.png
 ------WebKitFormBoundary7MA4YWxkTrZu0gW--
 
-###
-POST {{host}}/
-Content-Type: application/json
-
-{}
 
 ###
-POST {{host}}/
-Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
-
-------WebKitFormBoundary7MA4YWxkTrZu0gW
-Content-Disposition: form-data; name="image"; filename="access-flow.png"
-Content-Type: image/png
-
-< ../public/access-flow.png
-------WebKitFormBoundary7MA4YWxkTrZu0gW--
+GET {{host}}/{{media.response.body.url}}
 
 ###
-GET {{host}}/{{media.response.body.key}}
+GET {{host}}/{{media.response.body.url}}?quality=1
 
 ###
-GET {{host}}/{{media.response.body.key}}?quality=50
+GET {{host}}/{{media.response.body.url}}?width=300
 
 ###
-GET {{host}}/{{media.response.body.key}}?width=300
+GET {{host}}/{{media.response.body.url}}?height=200
+
 
 ###
-GET {{host}}/{{media.response.body.key}}?height=200
+DELETE {{host}}/{{media.response.body.url}}

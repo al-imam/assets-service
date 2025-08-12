@@ -21,12 +21,10 @@ export function getFilename(filePath: string): string {
 
 export function deleteFile(filePath: string): boolean {
   try {
-    if (existsSync(filePath)) {
-      unlinkSync(filePath);
-      return true;
-    }
+    if (!existsSync(filePath)) return false;
 
-    return false;
+    unlinkSync(filePath);
+    return true;
   } catch {
     return false;
   }
