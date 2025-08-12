@@ -96,10 +96,10 @@ export class ServiceUnavailableError extends HttpError {
 }
 
 export const ErrorHandler: ErrorRequestHandler = (error, _req, res, _next) => {
-  console.error("Unhandled error:", error);
   if (error instanceof HttpError) {
     res.status(error.status).json(error);
   } else {
+    console.log(error);
     const internalServerError = new InternalServerError();
     res.status(internalServerError.status).json(internalServerError);
   }

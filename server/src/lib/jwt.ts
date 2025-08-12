@@ -2,8 +2,6 @@ import { JWTHeaderParameters, JWTVerifyOptions, SignJWT, decodeJwt, jwtVerify } 
 import { env } from "~/env";
 import { createSecretKey } from "~/utils/crypto";
 
-const DEFAULT_SECRET_KEY = createSecretKey(env.SECRET_KEY);
-
 interface SignOptions {
   headers: JWTHeaderParameters;
   expiresIn: string;
@@ -14,27 +12,16 @@ interface VerifyOptions extends JWTVerifyOptions {
   secret?: string;
 }
 
-export function sign(
-  payload: unknown,
-  options: Partial<SignOptions> = {
-    headers: { alg: "HS256" },
-    expiresIn: "30d",
-  }
-) {
-  const secret = options.secret ? createSecretKey(env.SECRET_KEY + "@" + options.secret) : DEFAULT_SECRET_KEY;
-
+export function sign(payload: unknown, options?: Partial<SignOptions>) {
   return new SignJWT({ payload })
     .setIssuedAt()
-    .setProtectedHeader({ alg: "HS256" })
-    .setExpirationTime(options.expiresIn ?? "30d")
-    .sign(secret);
+    .setProtectedHeader({ alg: "HS256", ...options?.headers })
+    .setExpirationTime(options?.expiresIn ?? "30d")
+    .sign(createSecretKey(env.JWT_SECRET, options?.secret));
 }
 
-export async function verify<T>(jwt: string, options: VerifyOptions = {}) {
-  const secret = options.secret ? createSecretKey(env.SECRET_KEY + "@" + options.secret) : DEFAULT_SECRET_KEY;
-
-  const parsed = await jwtVerify(jwt, secret, options);
-
+export async function verify<T>(jwt: string, options?: VerifyOptions) {
+  const parsed = await jwtVerify(jwt, createSecretKey(env.JWT_SECRET, options?.secret), options);
   return parsed.payload.payload as T;
 }
 
