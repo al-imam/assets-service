@@ -14,7 +14,6 @@ const PortSchema = z
 const envSchema = z
   .object({
     NODE_ENV: z.enum(["development", "production"]).default("development"),
-
     ROOT: z.string().default(() => ROOT),
 
     STORAGE_DIRECTORY: z.string().default(() => normalize(join(ROOT, "secure-storage"))),
@@ -28,6 +27,7 @@ const envSchema = z
     QUEUE_CONCURRENCY: z.coerce.number().int().min(1).max(64).default(4),
 
     SECRET_KEY: z.string().default("dev-secret"),
+    JWT_SECRET: z.string().default("dev-secret"),
 
     PORT: PortSchema.default(8000),
   })

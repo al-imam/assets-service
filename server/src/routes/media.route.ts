@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { extname, join } from "path";
+import { createAccessToken } from "~/controllers/access.controller";
 import { db } from "~/db";
 import { env } from "~/env";
 import {
@@ -10,13 +11,16 @@ import {
   type OutputFormat,
 } from "~/image/pipeline";
 import { BadRequestError, NotFoundError, ZodValidationError } from "~/lib/http";
+import { authorize } from "~/middleware/access.middleware";
 import { uploadSingleImage } from "~/middleware/upload.middleware";
 import { enqueueIngest } from "~/queue/media.queue";
 import { deleteFile, getFilename } from "~/utils/file";
 
 export const mediaRouter = Router();
 
-mediaRouter.post("/", uploadSingleImage.single("file"), async (req, res) => {
+mediaRouter.post("/issue-access", createAccessToken);
+
+mediaRouter.post("/", authorize("write"), uploadSingleImage.single("file"), async (req, res) => {
   if (!req.file) throw new BadRequestError("File not provided");
   if (!req.file.path || !req.file.originalname) throw new BadRequestError("Invalid file");
 
@@ -25,8 +29,9 @@ mediaRouter.post("/", uploadSingleImage.single("file"), async (req, res) => {
   res.status(201).json({ key: result.key, url: `m/${result.key}` });
 });
 
-mediaRouter.delete("/:hash/:filename", async (req, res) => {
+mediaRouter.delete("/:hash/:filename", authorize("delete"), async (req, res) => {
   const hash = req.params.hash;
+
   if (!hash) throw new NotFoundError("Image not found");
   const record = await db.image.findFirst({ where: { key: { startsWith: hash + "/" } } });
   if (!record) throw new NotFoundError("Image not found");
